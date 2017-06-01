@@ -106,6 +106,11 @@ var info = {
             "subscriptions/subscriptions.css",
         ],
 
+        "session_recording/recordings": [
+            "session_recording/recordings.jsx",
+            "session_recording/recordings.css",
+        ],
+
         "systemd/services": [
             "systemd/init.js",
         ],
@@ -232,6 +237,9 @@ var info = {
 
         "subscriptions/index.html",
         "subscriptions/manifest.json",
+
+        "session_recording/manifest.json",
+        "session_recording/index.html",
 
         "systemd/index.html",
         "systemd/logs.html",
