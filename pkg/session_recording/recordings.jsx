@@ -279,7 +279,7 @@
                 /* ID of the recording to display, or null for all */
                 recordingID: cockpit.location.path[0] || null,
                 /* Date since */
-                dateSince: null,
+                dateSince: null),
             }
         }
 
@@ -467,16 +467,21 @@
         }
 
         componentDidMount() {
+            var funcDate = this.handleChange;
             $('#date-inputfrom').datepicker({
                 autoclose: true,
                 todayHighlight: true,
                 format: 'yyyy-mm-dd',
                 startDate: "today",
+            }).on('changeDate', function(e) {
+                funcDate(e);
             });
         }
 
         handleChange(e) {
-          this.setState({temperature: e.target.value});
+            console.log('ahoj');
+            console.log(e.date);
+            this.setState({date_since: e.date});
         }
 
         render() {
