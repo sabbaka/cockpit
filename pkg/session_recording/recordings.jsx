@@ -20,12 +20,15 @@
 (function() {
     "use strict";
 
+    var $ = require("jquery");
     var cockpit = require("cockpit");
     var _ = cockpit.gettext;
     var Journal = require("journal");
     var React = require("react");
     var Listing = require("cockpit-components-listing.jsx");
     var Terminal = require("cockpit-components-terminal.jsx");
+
+    require("bootstrap-datepicker/dist/js/bootstrap-datepicker");
 
     /*
      * Convert a number to integer number string and pad with zeroes to
@@ -166,8 +169,10 @@
                 }
 
                 return (
-                    <div>
-                        <h2>{_("Recording")}</h2>
+                    <div className="panel panel-default">
+                        <div className="panel-heading">
+                            <span id="journal-entry-id">{_("Recording")}</span>
+                        </div>
                         <table>
                             <tr>
                                 <td>{_("Boot ID")}</td>
@@ -223,12 +228,12 @@
         }
 
         render() {
-            var columnTitles = [_("User"), _("Start"), _("End"), _("Duration")];
-            var list = this.props.list;
-            var rows = [];
-            for (var i = 0; i < list.length; i++) {
-                var r = list[i];
-                var columns = [r.user,
+            let columnTitles = [_("User"), _("Start"), _("End"), _("Duration")];
+            let list = this.props.list;
+            let rows = [];
+            for (let i = 0; i < list.length; i++) {
+                let r = list[i];
+                let columns = [r.user,
                                formatDateTime(r.start),
                                formatDateTime(r.end),
                                formatDuration(r.end - r.start)];
@@ -238,12 +243,16 @@
                             navigateToItem={this.navigateToRecording.bind(this, r)}/>);
             }
             return (
+                <div>
+                <Datepicker></Datepicker>
                 <Listing.Listing title={_("Sessions")}
                                  columnTitles={columnTitles}
                                  emptyCaption={_("No recorded sessions")}
-                                 fullWidth={false}>
+                                 fullWidth={false}
+                                 >
                     {rows}
                 </Listing.Listing>
+                </div>
             );
         }
     };
@@ -269,8 +278,12 @@
                 recordingList: [],
                 /* ID of the recording to display, or null for all */
                 recordingID: cockpit.location.path[0] || null,
+                /* Date since */
+                dateSince: null,
             }
         }
+
+
 
         /*
          * Display a journalctl error
@@ -364,8 +377,14 @@
          */
         journalctlStart() {
             /* TODO Lookup UID of "tlog" user on module init */
-            var matches = ["_UID=987"];
-            var options = {follow: true, count: "all"};
+            var matches = ["_COMM=tlog-rec"];
+            // DATE yyyy-mm-dd
+            let date_from = $('#date-inputfrom').val();
+            console.log(date_from);
+            var options = {follow: true, count: "all" };
+            if(this.state.dateSince != null) {
+                options.since = this.state.dateSince;
+            }
 
             if (this.state.recordingID !== null) {
                 var parts = this.state.recordingID.split('-', 3);
@@ -425,7 +444,10 @@
         }
 
         render() {
-            if (this.state.recordingID === null) {
+            if(this.state.dateSince != null) {
+                return <RecordingList list={this.state.dateSince} />;
+            }
+            else if (this.state.recordingID === null) {
                 return <RecordingList list={this.state.recordingList} />;
             } else {
                 return (
@@ -436,6 +458,33 @@
             }
         }
     };
+
+    var Datepicker = class extends React.Component {
+        constructor(props) {
+            super(props);
+            this.handleChange = this.handleChange.bind(this);
+            this.state = {date_since: ''};
+        }
+
+        componentDidMount() {
+            $('#date-inputfrom').datepicker({
+                autoclose: true,
+                todayHighlight: true,
+                format: 'yyyy-mm-dd',
+                startDate: "today",
+            });
+        }
+
+        handleChange(e) {
+          this.setState({temperature: e.target.value});
+        }
+
+        render() {
+            return (
+                <input className="form-control" id="date-inputfrom" type="text" name="date-inputfrom" />
+            );
+        }
+    }
 
     React.render(<View />, document.getElementById('view'));
 }());
