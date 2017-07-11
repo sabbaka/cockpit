@@ -259,13 +259,12 @@
     var Datepicker = class extends React.Component {
         constructor(props) {
             super(props);
-            this.handleChange = this.handleChange.bind(this);
-            this.state = {date_since: ''};
+            this.handleDateChange = this.handleDateChange.bind(this);
         }
-/*
+
         componentDidMount() {
-            var funcDate = this.handleChange;
-            $('#date-inputfrom').datepicker({
+            var funcDate = this.handleDateChange;
+            $('#datefrom').datepicker({
                 autoclose: true,
                 todayHighlight: true,
                 format: 'yyyy-mm-dd',
@@ -274,21 +273,20 @@
                 funcDate(e);
             });
         }
-*/
-        handleChange(e) {
-            // console.log('ahoj');
-            // console.log(e.date);
-            this.setState({date_since: e.date});
-            // View.setState({date_since: e.date});
-            console.log(this.state.date_since);
+
+
+        handleDateChange(e) {
+            // console.log('ahoj from datepicker');
+            // console.log(e.target.value);
+            this.props.onDateChange(e.target.value);
         }
 
         render() {
-            const dateSince = this.state.date_since;
+            const date = this.props.date;
             return (
                 <div>
-                <input className="form-control" id="date-inputfrom" type="text" name="date-inputfrom" value={dateSince} />
-                {dateSince}
+                    <input id="datefrom" type="text" value={date} onChange={this.handleDateChange} />
+                    {date}
                 </div>
             );
         }
@@ -304,6 +302,7 @@
             super(props);
             this.onLocationChanged = this.onLocationChanged.bind(this);
             this.journalctlIngest = this.journalctlIngest.bind(this);
+            this.handleDateChange = this.handleDateChange.bind(this);
             /* Journalctl instance */
             this.journalctl = null;
             /* Recording ID journalctl instance is invoked with */
@@ -317,11 +316,9 @@
                 recordingID: cockpit.location.path[0] || null,
                 /* Date since */
                 // dateSince: null,
-                dateSince: null,
+                date: '',
             }
         }
-
-
 
         /*
          * Display a journalctl error
@@ -342,15 +339,22 @@
          * Ingest journal entries sent by journalctl.
          */
         journalctlIngest(entryList) {
+            console.log('ingest');
             var recordingList = this.state.recordingList.slice();
             var i;
             var j;
+
+            console.log(recordingList);
 
             for (i = 0; i < entryList.length; i++) {
                 var e = entryList[i];
                 var boot_id = e["_BOOT_ID"];
                 var session_id = e["TLOG_SESSION"];
                 var process_id = e["_PID"];
+
+                var date = new Date(this.state.date).getTime();
+
+                console.log(date);
 
                 /* Skip entries with missing session ID */
                 if (session_id === undefined) {
@@ -362,9 +366,11 @@
                             parseInt(e["__REALTIME_TIMESTAMP"], 10) /
                                 1000);
 
+                // console.log(ts);
+
                 var r = this.recordingMap[id];
                 /* If no recording found */
-                if (r === undefined) {
+                if (r === undefined && ts > date) {
                     /* Create new recording */
                     r = {id:            id,
                          user:          e["TLOG_USER"],
@@ -414,16 +420,19 @@
          * Assumes journalctl is not running.
          */
         journalctlStart() {
+            // console.log('journalctlStart');
+            // console.log(this.state.date);
+            // var date = new Date(this.state.date).getTime() / 1000;
+            // console.log(date);
             /* TODO Lookup UID of "tlog" user on module init */
             var matches = ["_COMM=tlog-rec"];
             // DATE yyyy-mm-dd
             // let date_from = $('#date-inputfrom').val();
-            var options = {follow: true, count: "all" };
-            console.log(this.state.dateSince);
-            if(this.state.dateSince != null) {
-                options.since = this.state.dateSince;
-            }
-
+            // var options = {follow: true, count: "all", since: this.state.date };
+            var options = {follow: false, count: "all", since: this.state.date};
+            // var options = {follow: false, count: "all", since: '2017-07-10'};
+            console.log(options);
+            console.log(this.state.recordingID);
             if (this.state.recordingID !== null) {
                 var parts = this.state.recordingID.split('-', 3);
                 matches = matches.concat([
@@ -435,8 +444,14 @@
 
             this.journalctlRecordingID = this.state.recordingID;
             this.journalctl = Journal.journalctl(matches, options).
-                                        fail(this.journalctlError).
-                                        stream(this.journalctlIngest);
+                                        done(this.journalctlIngest
+                                            // function(entries) {
+                                            //     console.log(entries);
+                                            //     this.journalctlIngest;
+                                            // }
+                                        ).
+                                        fail(this.journalctlError);
+                                        // stream(this.journalctlIngest);
         }
 
         /*
@@ -455,16 +470,23 @@
             this.journalctl = null;
         }
 
-        onDateSinceChange() {
-
+        handleDateChange(date) {
+            /*
+            if (this.journalctlIsRunning()) {
+                this.journalctlStop();
+                console.log('stopped');
+            }*/
+            // this.journalctlStop();
+            this.setState({recordingList: []});
+            this.setState({date: date });
+            console.log(this.state);
+            this.journalctlStart();
         }
 
         componentDidMount() {
             this.journalctlStart();
             cockpit.addEventListener("locationchanged",
                                      this.onLocationChanged);
-            cockpit.addEventListener("locationchanged",
-                                     this.onDateSinceChange);
         }
 
         componentWillUnmount() {
@@ -488,28 +510,20 @@
         }
 
         render() {
-            if(this.state.dateSince != null) {
+            const date = this.state.date;
+
+            if(this.state.recordingID === null) {
                 return (
                     <div>
-                    <Datepicker />
-                    <RecordingList dateSince={this.state.dateSince} />
+                    <Datepicker date={date} onDateChange={this.handleDateChange} />
+                    <RecordingList date={date} list={this.state.recordingList} />
                     </div>
                 );
             }
-            else if (this.state.recordingID === null) {
+            else {
                 return (
                     <div>
-                    <Datepicker />
-                    <RecordingList list={this.state.recordingList} />
-                    </div>
-                );
-            } else {
-                return (
-                    <div>
-                    <Datepicker />
-                    <Recording
-                        recording={this.recordingMap[this.state.recordingID]}
-                    />
+                        <Recording recording={this.recordingMap[this.state.recordingID]} />
                     </div>
                 );
             }
