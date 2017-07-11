@@ -244,7 +244,6 @@
             }
             return (
                 <div>
-                <Datepicker></Datepicker>
                 <Listing.Listing title={_("Sessions")}
                                  columnTitles={columnTitles}
                                  emptyCaption={_("No recorded sessions")}
@@ -256,6 +255,44 @@
             );
         }
     };
+
+    var Datepicker = class extends React.Component {
+        constructor(props) {
+            super(props);
+            this.handleChange = this.handleChange.bind(this);
+            this.state = {date_since: ''};
+        }
+/*
+        componentDidMount() {
+            var funcDate = this.handleChange;
+            $('#date-inputfrom').datepicker({
+                autoclose: true,
+                todayHighlight: true,
+                format: 'yyyy-mm-dd',
+                startDate: '',
+            }).on('changeDate', function(e) {
+                funcDate(e);
+            });
+        }
+*/
+        handleChange(e) {
+            // console.log('ahoj');
+            // console.log(e.date);
+            this.setState({date_since: e.date});
+            // View.setState({date_since: e.date});
+            console.log(this.state.date_since);
+        }
+
+        render() {
+            const dateSince = this.state.date_since;
+            return (
+                <div>
+                <input className="form-control" id="date-inputfrom" type="text" name="date-inputfrom" value={dateSince} />
+                {dateSince}
+                </div>
+            );
+        }
+    }
 
     /*
      * A component representing the view upon a list of recordings, or a
@@ -279,7 +316,8 @@
                 /* ID of the recording to display, or null for all */
                 recordingID: cockpit.location.path[0] || null,
                 /* Date since */
-                dateSince: null),
+                // dateSince: null,
+                dateSince: null,
             }
         }
 
@@ -379,9 +417,9 @@
             /* TODO Lookup UID of "tlog" user on module init */
             var matches = ["_COMM=tlog-rec"];
             // DATE yyyy-mm-dd
-            let date_from = $('#date-inputfrom').val();
-            console.log(date_from);
+            // let date_from = $('#date-inputfrom').val();
             var options = {follow: true, count: "all" };
+            console.log(this.state.dateSince);
             if(this.state.dateSince != null) {
                 options.since = this.state.dateSince;
             }
@@ -417,10 +455,16 @@
             this.journalctl = null;
         }
 
+        onDateSinceChange() {
+
+        }
+
         componentDidMount() {
             this.journalctlStart();
             cockpit.addEventListener("locationchanged",
                                      this.onLocationChanged);
+            cockpit.addEventListener("locationchanged",
+                                     this.onDateSinceChange);
         }
 
         componentWillUnmount() {
@@ -445,51 +489,32 @@
 
         render() {
             if(this.state.dateSince != null) {
-                return <RecordingList list={this.state.dateSince} />;
+                return (
+                    <div>
+                    <Datepicker />
+                    <RecordingList dateSince={this.state.dateSince} />
+                    </div>
+                );
             }
             else if (this.state.recordingID === null) {
-                return <RecordingList list={this.state.recordingList} />;
+                return (
+                    <div>
+                    <Datepicker />
+                    <RecordingList list={this.state.recordingList} />
+                    </div>
+                );
             } else {
                 return (
+                    <div>
+                    <Datepicker />
                     <Recording
                         recording={this.recordingMap[this.state.recordingID]}
                     />
+                    </div>
                 );
             }
         }
     };
-
-    var Datepicker = class extends React.Component {
-        constructor(props) {
-            super(props);
-            this.handleChange = this.handleChange.bind(this);
-            this.state = {date_since: ''};
-        }
-
-        componentDidMount() {
-            var funcDate = this.handleChange;
-            $('#date-inputfrom').datepicker({
-                autoclose: true,
-                todayHighlight: true,
-                format: 'yyyy-mm-dd',
-                startDate: "today",
-            }).on('changeDate', function(e) {
-                funcDate(e);
-            });
-        }
-
-        handleChange(e) {
-            console.log('ahoj');
-            console.log(e.date);
-            this.setState({date_since: e.date});
-        }
-
-        render() {
-            return (
-                <input className="form-control" id="date-inputfrom" type="text" name="date-inputfrom" />
-            );
-        }
-    }
 
     React.render(<View />, document.getElementById('view'));
 }());
