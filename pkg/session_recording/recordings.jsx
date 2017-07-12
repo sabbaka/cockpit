@@ -316,7 +316,7 @@
                 recordingID: cockpit.location.path[0] || null,
                 /* Date since */
                 // dateSince: null,
-                date: '',
+                date: null,
             }
         }
 
@@ -341,8 +341,6 @@
         journalctlIngest(entryList) {
             console.log('ingest', entryList);
             // console.log(entryList);
-            this.setState({recordingList: [] });
-            this.recordingMap = {};
             var recordingList = this.state.recordingList.slice();
             var i;
             var j;
@@ -388,6 +386,10 @@
                          j--);
                     recordingList.splice(j + 1, 0, r);
                 } else {
+                    /* Remove existing recording for list if it's not in correct timeframe */
+                    if(ts < r.start) {
+                        delete this.recordingMap[id];
+                    }
                     /* Adjust existing recording */
                     if (ts > r.end) {
                         r.end = ts;
@@ -444,14 +446,8 @@
 
             this.journalctlRecordingID = this.state.recordingID;
             this.journalctl = Journal.journalctl(matches, options).
-                                        done(this.journalctlIngest
-                                            // function(entries) {
-                                            //     console.log(entries);
-                                            //     this.journalctlIngest;
-                                            // }
-                                        ).
-                                        fail(this.journalctlError);
-                                        // stream(this.journalctlIngest);
+                                        fail(this.journalctlError).
+                                        stream(this.journalctlIngest);
         }
 
         /*
@@ -477,9 +473,13 @@
                 console.log('stopped');
             }*/
             // this.journalctlStop();
+
             this.setState({recordingList: []});
             this.setState({date: date });
+            this.recordingMap = {};
+
             console.log(this.state);
+
             this.journalctlStart();
         }
 
