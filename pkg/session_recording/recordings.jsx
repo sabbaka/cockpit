@@ -339,12 +339,13 @@
          * Ingest journal entries sent by journalctl.
          */
         journalctlIngest(entryList) {
-            console.log('ingest');
+            console.log('ingest', entryList);
+            // console.log(entryList);
+            this.setState({recordingList: [] });
+            this.recordingMap = {};
             var recordingList = this.state.recordingList.slice();
             var i;
             var j;
-
-            console.log(recordingList);
 
             for (i = 0; i < entryList.length; i++) {
                 var e = entryList[i];
@@ -352,9 +353,8 @@
                 var session_id = e["TLOG_SESSION"];
                 var process_id = e["_PID"];
 
+                // added date to unix time for datepicker filtering
                 var date = new Date(this.state.date).getTime();
-
-                console.log(date);
 
                 /* Skip entries with missing session ID */
                 if (session_id === undefined) {
@@ -366,7 +366,7 @@
                             parseInt(e["__REALTIME_TIMESTAMP"], 10) /
                                 1000);
 
-                // console.log(ts);
+                console.log('Date diff: ' , date - ts, ts > date, typeof(ts), typeof(date), ts.toString().length, date.toString().length );
 
                 var r = this.recordingMap[id];
                 /* If no recording found */
@@ -432,7 +432,7 @@
             var options = {follow: false, count: "all", since: this.state.date};
             // var options = {follow: false, count: "all", since: '2017-07-10'};
             console.log(options);
-            console.log(this.state.recordingID);
+            console.log(this.state);
             if (this.state.recordingID !== null) {
                 var parts = this.state.recordingID.split('-', 3);
                 matches = matches.concat([
