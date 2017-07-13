@@ -283,11 +283,12 @@
 
         render() {
             const date = this.props.date;
+            // <input className="form-control date-hours" type="text">:
+            // <input className="form-control date-minutes" type="text">
             return (
-                <div>
-                    <input id="datefrom" type="text" value={date} onChange={this.handleDateChange} />
-                    {date}
-                </div>
+                <td>
+                    <input id="datefrom" className="form-control datefrom" type="text" value={date} onChange={this.handleDateChange} />
+                </td>
             );
         }
     }
@@ -431,7 +432,7 @@
             // DATE yyyy-mm-dd
             // let date_from = $('#date-inputfrom').val();
             // var options = {follow: true, count: "all", since: this.state.date };
-            var options = {follow: false, count: "all", since: this.state.date};
+            var options = {follow: true, count: "all", since: this.state.date};
             // var options = {follow: false, count: "all", since: '2017-07-10'};
             console.log(options);
             console.log(this.state);
@@ -515,7 +516,14 @@
             if(this.state.recordingID === null) {
                 return (
                     <div>
-                    <Datepicker date={date} onDateChange={this.handleDateChange} />
+                        <div className="content-header-extra">
+                            <table class="form-table-ct">
+                                <tr>
+                                    <td className="top"><label className="control-label" for="date">Date since</label></td>
+                                    <td><Datepicker date={date} onDateChange={this.handleDateChange} /></td>
+                                </tr>
+                            </table>
+                        </div>
                     <RecordingList date={date} list={this.state.recordingList} />
                     </div>
                 );
