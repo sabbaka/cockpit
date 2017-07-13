@@ -264,7 +264,8 @@
 
         componentDidMount() {
             var funcDate = this.handleDateChange;
-            $('#datefrom').datepicker({
+            let elemId = '#' + this.props.element;
+            $(elemId).datepicker({
                 autoclose: true,
                 todayHighlight: true,
                 format: 'yyyy-mm-dd',
@@ -274,20 +275,14 @@
             });
         }
 
-
         handleDateChange(e) {
-            // console.log('ahoj from datepicker');
-            // console.log(e.target.value);
             this.props.onDateChange(e.target.value);
         }
 
         render() {
-            const date = this.props.date;
-            // <input className="form-control date-hours" type="text">:
-            // <input className="form-control date-minutes" type="text">
             return (
                 <td>
-                    <input id="datefrom" className="form-control datefrom" type="text" value={date} onChange={this.handleDateChange} />
+                    <input id={this.props.element} className="form-control datefrom" type="text" onChange={this.handleDateChange} />
                 </td>
             );
         }
@@ -303,7 +298,8 @@
             super(props);
             this.onLocationChanged = this.onLocationChanged.bind(this);
             this.journalctlIngest = this.journalctlIngest.bind(this);
-            this.handleDateChange = this.handleDateChange.bind(this);
+            this.handleDateSinceChange = this.handleDateSinceChange.bind(this);
+            this.handleDateUntilChange = this.handleDateUntilChange.bind(this);
             /* Journalctl instance */
             this.journalctl = null;
             /* Recording ID journalctl instance is invoked with */
@@ -316,8 +312,9 @@
                 /* ID of the recording to display, or null for all */
                 recordingID: cockpit.location.path[0] || null,
                 /* Date since */
-                // dateSince: null,
-                date: null,
+                dateSince: null,
+                /* Date until */
+                dateUntil: null,
             }
         }
 
@@ -340,8 +337,6 @@
          * Ingest journal entries sent by journalctl.
          */
         journalctlIngest(entryList) {
-            console.log('ingest', entryList);
-            // console.log(entryList);
             var recordingList = this.state.recordingList.slice();
             var i;
             var j;
@@ -351,9 +346,6 @@
                 var boot_id = e["_BOOT_ID"];
                 var session_id = e["TLOG_SESSION"];
                 var process_id = e["_PID"];
-
-                // added date to unix time for datepicker filtering
-                var date = new Date(this.state.date).getTime();
 
                 /* Skip entries with missing session ID */
                 if (session_id === undefined) {
@@ -365,11 +357,9 @@
                             parseInt(e["__REALTIME_TIMESTAMP"], 10) /
                                 1000);
 
-                console.log('Date diff: ' , date - ts, ts > date, typeof(ts), typeof(date), ts.toString().length, date.toString().length );
-
                 var r = this.recordingMap[id];
                 /* If no recording found */
-                if (r === undefined && ts > date) {
+                if (r === undefined) {
                     /* Create new recording */
                     r = {id:            id,
                          user:          e["TLOG_USER"],
@@ -423,19 +413,12 @@
          * Assumes journalctl is not running.
          */
         journalctlStart() {
-            // console.log('journalctlStart');
-            // console.log(this.state.date);
-            // var date = new Date(this.state.date).getTime() / 1000;
-            // console.log(date);
             /* TODO Lookup UID of "tlog" user on module init */
-            var matches = ["_COMM=tlog-rec"];
-            // DATE yyyy-mm-dd
-            // let date_from = $('#date-inputfrom').val();
-            // var options = {follow: true, count: "all", since: this.state.date };
-            var options = {follow: true, count: "all", since: this.state.date};
-            // var options = {follow: false, count: "all", since: '2017-07-10'};
-            console.log(options);
-            console.log(this.state);
+            /* Or Lookup by tlog-rec parameter */
+            // var matches = ["_COMM=tlog-rec"];
+            var matches = ["_UID=979"];
+            // DATE format is yyyy-mm-dd
+            var options = {follow: true, count: "all", since: this.state.dateSince, until: this.state.dateUntil};
             if (this.state.recordingID !== null) {
                 var parts = this.state.recordingID.split('-', 3);
                 matches = matches.concat([
@@ -467,20 +450,17 @@
             this.journalctl = null;
         }
 
-        handleDateChange(date) {
-            /*
-            if (this.journalctlIsRunning()) {
-                this.journalctlStop();
-                console.log('stopped');
-            }*/
-            // this.journalctlStop();
-
+        handleDateSinceChange(date) {
             this.setState({recordingList: []});
-            this.setState({date: date });
+            this.setState({dateSince: date });
             this.recordingMap = {};
+            this.journalctlStart();
+        }
 
-            console.log(this.state);
-
+        handleDateUntilChange(date) {
+            this.setState({recordingList: []});
+            this.setState({dateUntil: date });
+            this.recordingMap = {};
             this.journalctlStart();
         }
 
@@ -511,7 +491,8 @@
         }
 
         render() {
-            const date = this.state.date;
+            const dateSince = this.state.dateSince;
+            const dateUntil = this.state.dateUntil;
 
             if(this.state.recordingID === null) {
                 return (
@@ -519,12 +500,14 @@
                         <div className="content-header-extra">
                             <table class="form-table-ct">
                                 <tr>
-                                    <td className="top"><label className="control-label" for="date">Date since</label></td>
-                                    <td><Datepicker date={date} onDateChange={this.handleDateChange} /></td>
+                                    <td className="top"><label className="control-label" for="dateSince">Date Since</label></td>
+                                    <td><Datepicker element={'dateSince'} date={dateSince} onDateChange={this.handleDateSinceChange} /></td>
+                                    <td className="top"><label className="control-label" for="dateUntil">Date Until</label></td>
+                                    <td><Datepicker element={'dateUntil'} date={dateUntil} onDateChange={this.handleDateUntilChange} /></td>
                                 </tr>
                             </table>
                         </div>
-                    <RecordingList date={date} list={this.state.recordingList} />
+                    <RecordingList list={this.state.recordingList} />
                     </div>
                 );
             }
