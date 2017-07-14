@@ -20,12 +20,15 @@
 (function() {
     "use strict";
 
+    var $ = require("jquery");
     var cockpit = require("cockpit");
     var _ = cockpit.gettext;
     var Journal = require("journal");
     var React = require("react");
     var Listing = require("cockpit-components-listing.jsx");
     var Terminal = require("cockpit-components-terminal.jsx");
+
+    require("bootstrap-datepicker/dist/js/bootstrap-datepicker");
 
     /*
      * Convert a number to integer number string and pad with zeroes to
@@ -166,8 +169,10 @@
                 }
 
                 return (
-                    <div>
-                        <h2>{_("Recording")}</h2>
+                    <div className="panel panel-default">
+                        <div className="panel-heading">
+                            <span id="journal-entry-id">{_("Recording")}</span>
+                        </div>
                         <table>
                             <tr>
                                 <td>{_("Boot ID")}</td>
@@ -213,6 +218,12 @@
     var RecordingList = class extends React.Component {
         constructor(props) {
             super(props);
+            this.handleDateSinceChange = this.handleDateSinceChange.bind(this);
+            this.handleDateUntilChange = this.handleDateUntilChange.bind(this);
+            this.state = {
+                dateSince: null,
+                dateUntil: null,
+            };
         }
 
         /*
@@ -222,13 +233,31 @@
             cockpit.location.go([recording.id]);
         }
 
+        /*
+         * Handles Datepicker Since.
+         */
+        handleDateSinceChange(date) {
+            this.setState({dateSince: date});
+            this.props.onDateSinceChange(date);
+        }
+
+        /*
+         * Handles Datepicker Until.
+         */
+        handleDateUntilChange(date) {
+            this.setState({dateUntil: date});
+            this.props.onDateUntilChange(date);
+        }
+
         render() {
-            var columnTitles = [_("User"), _("Start"), _("End"), _("Duration")];
-            var list = this.props.list;
-            var rows = [];
-            for (var i = 0; i < list.length; i++) {
-                var r = list[i];
-                var columns = [r.user,
+            const dateSince = this.state.dateSince;
+            const dateUntil = this.state.dateUntil;
+            let columnTitles = [_("User"), _("Start"), _("End"), _("Duration")];
+            let list = this.props.list;
+            let rows = [];
+            for (let i = 0; i < list.length; i++) {
+                let r = list[i];
+                let columns = [r.user,
                                formatDateTime(r.start),
                                formatDateTime(r.end),
                                formatDuration(r.end - r.start)];
@@ -238,15 +267,67 @@
                             navigateToItem={this.navigateToRecording.bind(this, r)}/>);
             }
             return (
+                <div>
+                <div className="content-header-extra">
+                    <table class="form-table-ct">
+                        <tr>
+                            <td className="top"><label className="control-label" for="dateSince">Date Since</label></td>
+                            <td>
+                                <Datepicker date={dateSince} onDateChange={this.handleDateSinceChange} />
+                            </td>
+                            <td className="top"><label className="control-label" for="dateUntil">Date Until</label></td>
+                            <td>
+                                <Datepicker date={dateUntil} onDateChange={this.handleDateUntilChange} />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
                 <Listing.Listing title={_("Sessions")}
                                  columnTitles={columnTitles}
                                  emptyCaption={_("No recorded sessions")}
-                                 fullWidth={false}>
+                                 fullWidth={false}
+                                 >
                     {rows}
                 </Listing.Listing>
+                </div>
             );
         }
     };
+
+    var Datepicker = class extends React.Component {
+        constructor(props) {
+            super(props);
+            this.handleDateChange = this.handleDateChange.bind(this);
+        }
+
+        componentDidMount() {
+            let funcDate = this.handleDateChange;
+            $(this.textInput).datepicker({
+                autoclose: true,
+                todayHighlight: true,
+                format: 'yyyy-mm-dd',
+            }).on('changeDate', function(e) {
+                funcDate(e);
+            });
+        }
+
+        componentWillUnmount() {
+            $(this.textInput).destroy();
+        }
+
+        handleDateChange(e) {
+            this.props.onDateChange(e.target.value);
+        }
+
+        render() {
+            return (
+                <input ref={(input) => { this.textInput = input; }}
+                   className="form-control date"
+                   type="text"
+                   onChange={this.handleDateChange} />
+            );
+        }
+    }
 
     /*
      * A component representing the view upon a list of recordings, or a
@@ -258,6 +339,8 @@
             super(props);
             this.onLocationChanged = this.onLocationChanged.bind(this);
             this.journalctlIngest = this.journalctlIngest.bind(this);
+            this.handleDateSinceChange = this.handleDateSinceChange.bind(this);
+            this.handleDateUntilChange = this.handleDateUntilChange.bind(this);
             /* Journalctl instance */
             this.journalctl = null;
             /* Recording ID journalctl instance is invoked with */
@@ -269,6 +352,10 @@
                 recordingList: [],
                 /* ID of the recording to display, or null for all */
                 recordingID: cockpit.location.path[0] || null,
+                /* Date since */
+                dateSince: null,
+                /* Date until */
+                dateUntil: null,
             }
         }
 
@@ -331,6 +418,10 @@
                          j--);
                     recordingList.splice(j + 1, 0, r);
                 } else {
+                    /* Remove existing recording for list if it's not in correct timeframe */
+                    if(ts < r.start) {
+                        delete this.recordingMap[id];
+                    }
                     /* Adjust existing recording */
                     if (ts > r.end) {
                         r.end = ts;
@@ -364,9 +455,11 @@
          */
         journalctlStart() {
             /* TODO Lookup UID of "tlog" user on module init */
-            var matches = ["_UID=987"];
-            var options = {follow: true, count: "all"};
-
+            /* Or Lookup by tlog-rec parameter */
+            // var matches = ["_COMM=tlog-rec"];
+            var matches = ["_UID=979"];
+            // DATE format is yyyy-mm-dd
+            var options = {follow: true, count: "all", since: this.state.dateSince, until: this.state.dateUntil};
             if (this.state.recordingID !== null) {
                 var parts = this.state.recordingID.split('-', 3);
                 matches = matches.concat([
@@ -398,6 +491,35 @@
             this.journalctl = null;
         }
 
+        /*
+         * Restarts journalctl.
+         * Assumes journalctl is running.
+         */
+        journalctlRestart() {
+            if(this.journalctlIsRunning()) {
+                this.journalctl.stop();
+                this.recordingMap = {};
+                this.setState({recordingList: []});
+            }
+            this.journalctlStart();
+        }
+
+        /*
+         * Handles Datepicker Since.
+         */
+        handleDateSinceChange(date) {
+            this.setState({dateSince: date});
+            this.journalctlRestart();
+        }
+
+        /*
+         * Handles Datepicker Until.
+         */
+        handleDateUntilChange(date) {
+            this.setState({dateUntil: date});
+            this.journalctlRestart();
+        }
+
         componentDidMount() {
             this.journalctlStart();
             cockpit.addEventListener("locationchanged",
@@ -425,13 +547,24 @@
         }
 
         render() {
-            if (this.state.recordingID === null) {
-                return <RecordingList list={this.state.recordingList} />;
-            } else {
+            const dateSince = this.state.dateSince;
+            const dateUntil = this.state.dateUntil;
+
+            if(this.state.recordingID === null) {
                 return (
-                    <Recording
-                        recording={this.recordingMap[this.state.recordingID]}
-                    />
+                    <div>
+                    <RecordingList
+                        dateSince={dateSince} onDateSinceChange={this.handleDateSinceChange}
+                        dateUntil={dateUntil} onDateUntilChange={this.handleDateUntilChange}
+                        list={this.state.recordingList} />
+                    </div>
+                );
+            }
+            else {
+                return (
+                    <div>
+                        <Recording recording={this.recordingMap[this.state.recordingID]} />
+                    </div>
                 );
             }
         }
