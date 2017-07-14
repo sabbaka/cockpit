@@ -263,16 +263,18 @@
         }
 
         componentDidMount() {
-            var funcDate = this.handleDateChange;
-            let elemId = '#' + this.props.element;
-            $(elemId).datepicker({
+            let funcDate = this.handleDateChange;
+            $(this.textInput).datepicker({
                 autoclose: true,
                 todayHighlight: true,
                 format: 'yyyy-mm-dd',
-                startDate: '',
             }).on('changeDate', function(e) {
                 funcDate(e);
             });
+        }
+
+        componentWillUnmount() {
+            $(this.textInput).destroy();
         }
 
         handleDateChange(e) {
@@ -281,9 +283,10 @@
 
         render() {
             return (
-                <td>
-                    <input id={this.props.element} className="form-control datefrom" type="text" onChange={this.handleDateChange} />
-                </td>
+                <input ref={(input) => { this.textInput = input; }}
+                   className="form-control date"
+                   type="text"
+                   onChange={this.handleDateChange}  />
             );
         }
     }
@@ -516,9 +519,9 @@
                             <table class="form-table-ct">
                                 <tr>
                                     <td className="top"><label className="control-label" for="dateSince">Date Since</label></td>
-                                    <td><Datepicker element={'dateSince'} date={dateSince} onDateChange={this.handleDateSinceChange} /></td>
+                                    <td><Datepicker date={dateSince} onDateChange={this.handleDateSinceChange} /></td>
                                     <td className="top"><label className="control-label" for="dateUntil">Date Until</label></td>
-                                    <td><Datepicker element={'dateUntil'} date={dateUntil} onDateChange={this.handleDateUntilChange} /></td>
+                                    <td><Datepicker date={dateUntil} onDateChange={this.handleDateUntilChange} /></td>
                                 </tr>
                             </table>
                         </div>
