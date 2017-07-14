@@ -239,7 +239,6 @@
         handleDateSinceChange(date) {
             this.setState({dateSince: date});
             this.props.onDateSinceChange(date);
-            console.log('hi');
         }
 
         /*
@@ -509,7 +508,6 @@
          * Handles Datepicker Since.
          */
         handleDateSinceChange(date) {
-            console.log('aaa');
             this.setState({dateSince: date});
             this.journalctlRestart();
         }
