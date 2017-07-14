@@ -218,6 +218,12 @@
     var RecordingList = class extends React.Component {
         constructor(props) {
             super(props);
+            this.handleDateSinceChange = this.handleDateSinceChange.bind(this);
+            this.handleDateUntilChange = this.handleDateUntilChange.bind(this);
+            this.state = {
+                dateSince: null,
+                dateUntil: null,
+            };
         }
 
         /*
@@ -227,7 +233,26 @@
             cockpit.location.go([recording.id]);
         }
 
+        /*
+         * Handles Datepicker Since.
+         */
+        handleDateSinceChange(date) {
+            this.setState({dateSince: date});
+            this.props.onDateSinceChange(date);
+            console.log('hi');
+        }
+
+        /*
+         * Handles Datepicker Until.
+         */
+        handleDateUntilChange(date) {
+            this.setState({dateUntil: date});
+            this.props.onDateUntilChange(date);
+        }
+
         render() {
+            const dateSince = this.state.dateSince;
+            const dateUntil = this.state.dateUntil;
             let columnTitles = [_("User"), _("Start"), _("End"), _("Duration")];
             let list = this.props.list;
             let rows = [];
@@ -244,6 +269,20 @@
             }
             return (
                 <div>
+                <div className="content-header-extra">
+                    <table class="form-table-ct">
+                        <tr>
+                            <td className="top"><label className="control-label" for="dateSince">Date Since</label></td>
+                            <td>
+                                <Datepicker date={dateSince} onDateChange={this.handleDateSinceChange} />
+                            </td>
+                            <td className="top"><label className="control-label" for="dateUntil">Date Until</label></td>
+                            <td>
+                                <Datepicker date={dateUntil} onDateChange={this.handleDateUntilChange} />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
                 <Listing.Listing title={_("Sessions")}
                                  columnTitles={columnTitles}
                                  emptyCaption={_("No recorded sessions")}
@@ -286,7 +325,7 @@
                 <input ref={(input) => { this.textInput = input; }}
                    className="form-control date"
                    type="text"
-                   onChange={this.handleDateChange}  />
+                   onChange={this.handleDateChange} />
             );
         }
     }
@@ -470,6 +509,7 @@
          * Handles Datepicker Since.
          */
         handleDateSinceChange(date) {
+            console.log('aaa');
             this.setState({dateSince: date});
             this.journalctlRestart();
         }
@@ -515,17 +555,10 @@
             if(this.state.recordingID === null) {
                 return (
                     <div>
-                        <div className="content-header-extra">
-                            <table class="form-table-ct">
-                                <tr>
-                                    <td className="top"><label className="control-label" for="dateSince">Date Since</label></td>
-                                    <td><Datepicker date={dateSince} onDateChange={this.handleDateSinceChange} /></td>
-                                    <td className="top"><label className="control-label" for="dateUntil">Date Until</label></td>
-                                    <td><Datepicker date={dateUntil} onDateChange={this.handleDateUntilChange} /></td>
-                                </tr>
-                            </table>
-                        </div>
-                    <RecordingList list={this.state.recordingList} />
+                    <RecordingList
+                        dateSince={dateSince} onDateSinceChange={this.handleDateSinceChange}
+                        dateUntil={dateUntil} onDateUntilChange={this.handleDateUntilChange}
+                        list={this.state.recordingList} />
                     </div>
                 );
             }
