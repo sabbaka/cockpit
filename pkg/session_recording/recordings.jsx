@@ -450,18 +450,33 @@
             this.journalctl = null;
         }
 
-        handleDateSinceChange(date) {
-            this.setState({recordingList: []});
-            this.setState({dateSince: date });
-            this.recordingMap = {};
+        /*
+         * Restarts journalctl.
+         * Assumes journalctl is running.
+         */
+        journalctlRestart() {
+            if(this.journalctlIsRunning()) {
+                this.journalctl.stop();
+                this.recordingMap = {};
+                this.setState({recordingList: []});
+            }
             this.journalctlStart();
         }
 
+        /*
+         * Handles Datepicker Since.
+         */
+        handleDateSinceChange(date) {
+            this.setState({dateSince: date});
+            this.journalctlRestart();
+        }
+
+        /*
+         * Handles Datepicker Until.
+         */
         handleDateUntilChange(date) {
-            this.setState({recordingList: []});
-            this.setState({dateUntil: date });
-            this.recordingMap = {};
-            this.journalctlStart();
+            this.setState({dateUntil: date});
+            this.journalctlRestart();
         }
 
         componentDidMount() {
