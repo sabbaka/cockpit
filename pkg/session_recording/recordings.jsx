@@ -312,7 +312,7 @@
         }
 
         componentWillUnmount() {
-            $(this.textInput).destroy();
+            $(this.textInput).datepicker('destroy');
         }
 
         handleDateChange(e) {
