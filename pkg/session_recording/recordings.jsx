@@ -220,9 +220,11 @@
             super(props);
             this.handleDateSinceChange = this.handleDateSinceChange.bind(this);
             this.handleDateUntilChange = this.handleDateUntilChange.bind(this);
+            this.handleUsernameChange = this.handleUsernameChange.bind(this);
             this.state = {
                 dateSince: null,
                 dateUntil: null,
+                username: null,
             };
         }
 
@@ -247,6 +249,11 @@
         handleDateUntilChange(date) {
             this.setState({dateUntil: date});
             this.props.onDateUntilChange(date);
+        }
+
+        handleUsernameChange(username) {
+            this.setState({username: username});
+            this.props.onUsernameChange(username);
         }
 
         render() {
@@ -279,6 +286,10 @@
                             <td>
                                 <Datepicker date={dateUntil} onDateChange={this.handleDateUntilChange} />
                             </td>
+                            <td className="top"><label className="control-label" for="username">Username</label></td>
+                            <td>
+                                <UserPicker onChange={this.handleUsernameChange}/>
+                            </td>
                         </tr>
                     </table>
                 </div>
@@ -293,6 +304,23 @@
             );
         }
     };
+
+    var UserPicker = class extends React.Component {
+        constructor(props) {
+            super(props);
+            this.handleUsernameChange = this.handleUsernameChange.bind(this);
+        }
+
+        handleUsernameChange(e) {
+            this.props.onChange(e.target.value);
+        }
+
+        render() {
+            return (
+                <input ref={(input) => { this.textInput = input; }} type="text" className="form-control" onChange={this.handleUsernameChange} />
+            );
+        }
+    }
 
     var Datepicker = class extends React.Component {
         constructor(props) {
@@ -341,6 +369,7 @@
             this.journalctlIngest = this.journalctlIngest.bind(this);
             this.handleDateSinceChange = this.handleDateSinceChange.bind(this);
             this.handleDateUntilChange = this.handleDateUntilChange.bind(this);
+            this.handleUsernameChange = this.handleUsernameChange.bind(this);
             /* Journalctl instance */
             this.journalctl = null;
             /* Recording ID journalctl instance is invoked with */
@@ -356,6 +385,7 @@
                 dateSince: null,
                 /* Date until */
                 dateUntil: null,
+                username: null,
             }
         }
 
@@ -458,6 +488,9 @@
             /* Or Lookup by tlog-rec parameter */
             // var matches = ["_COMM=tlog-rec"];
             var matches = ["_UID=979"];
+            if(this.state.username) {
+                matches.push("TLOG_USER=" + this.state.username);
+            }
             // DATE format is yyyy-mm-dd
             var options = {follow: true, count: "all", since: this.state.dateSince, until: this.state.dateUntil};
             if (this.state.recordingID !== null) {
@@ -520,6 +553,11 @@
             this.journalctlRestart();
         }
 
+        handleUsernameChange(username) {
+            this.setState({username: username});
+            this.journalctlRestart();
+        }
+
         componentDidMount() {
             this.journalctlStart();
             cockpit.addEventListener("locationchanged",
@@ -549,6 +587,7 @@
         render() {
             const dateSince = this.state.dateSince;
             const dateUntil = this.state.dateUntil;
+            const username = this.state.username;
 
             if(this.state.recordingID === null) {
                 return (
@@ -556,6 +595,7 @@
                     <RecordingList
                         dateSince={dateSince} onDateSinceChange={this.handleDateSinceChange}
                         dateUntil={dateUntil} onDateUntilChange={this.handleDateUntilChange}
+                        username={username} onUsernameChange={this.handleUsernameChange}
                         list={this.state.recordingList} />
                     </div>
                 );
