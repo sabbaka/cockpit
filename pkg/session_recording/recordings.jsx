@@ -149,6 +149,36 @@
         }
     }
 
+    let Search = class extends React.Component {
+        constructor(props) {
+            super(props);
+            this.state = {
+                entries: null,
+            };
+        }
+
+        componentDidMount() {
+            this.setState({entries: this.props.entries});
+        }
+
+        render() {
+            let entries = null;
+            console.log(this.props.entries);
+            for (let value in this.props.entries) {
+                console.log(this.props.entries[value]);
+                entries = this.props.entries[value]._SOURCE_REALTIME_TIMESTAMP;
+                // entries =+ <li>{value._SOURCE_REALTIME_TIMESTAMP}</li>;
+            }
+            // entries =+ </ul>;
+            return (
+                <div className="col-md-6">
+                    <h1>Search</h1>
+                    {entries}
+                </div>
+            );
+        }
+    }
+
     /*
      * A component representing a single recording view.
      * Properties:
@@ -158,6 +188,7 @@
     let Recording = class extends React.Component {
         constructor(props) {
             super(props);
+            console.log(this.props.entries);
             this.restartPlayback = this.restartPlayback.bind(this);
             this.goBackToList = this.goBackToList.bind(this);
             this.state = {
@@ -319,6 +350,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <Search entries={this.props.entries} />
                         </div>
                     </div>
                 );
@@ -416,6 +448,7 @@
             this.recordingMap = {};
             /* tlog UID in system set in ComponentDidMount */
             this.uid = null;
+            this.entries = null;
             this.state = {
                 /* List of recordings in start order */
                 recordingList: [],
@@ -448,6 +481,10 @@
          * Ingest journal entries sent by journalctl.
          */
         journalctlIngest(entryList) {
+            if(this.journalctlRecordingID !== null) {
+                this.entries = entryList;
+            }
+
             let recordingList = this.state.recordingList.slice();
             let i;
             let j;
@@ -642,7 +679,8 @@
                 );
             } else {
                 return (
-                    <Recording recording={this.recordingMap[this.state.recordingID]} />
+                    <Recording recording={this.recordingMap[this.state.recordingID]}
+                        entries={this.entries} />
                 );
             }
         }
