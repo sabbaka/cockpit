@@ -151,6 +151,12 @@
         }
     }
 
+    let Logs = class extends React.Component {
+        constructor(props) {
+            super(props);
+        }
+    }
+
     /*
      * A component representing a single recording view.
      * Properties:
