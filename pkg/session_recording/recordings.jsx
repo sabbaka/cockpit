@@ -155,6 +155,53 @@
         constructor(props) {
             super(props);
         }
+
+        getLogs() {
+            let matches = ['-u auditd'];
+            // let matches = [];
+            // let options = {follow: false, count: "all", since: this.props.since, until: this.props.until};
+            let options = {follow: false, count: "all"};
+
+            console.log('GET LOGS');
+
+            let journalctlIngest = function(entryList) {
+                console.log(entryList);
+            };
+
+            Journal.journalctl(matches, options).stream(journalctlIngest);
+        }
+
+        componentDidMount() {
+            this.getLogs();
+        }
+
+        render() {/*
+            let columnTitles = [_("User"), _("Start"), _("End"), _("Duration")];
+            let list = this.props.list;
+            let rows = [];
+            for (let i = 0; i < list.length; i++) {
+                let r = list[i];
+                let columns = [r.user,
+                               formatDateTime(r.start),
+                               formatDateTime(r.end),
+                               formatDuration(r.end - r.start)];
+                rows.push(<Listing.ListingRow
+                            rowId={r.id}
+                            columns={columns}
+                            navigateToItem={this.navigateToRecording.bind(this, r)}/>);
+            }
+
+            return (
+                <Listing.Listing title={_("Logs")}
+                                 columnTitles={columnTitles}
+                                 emptyCaption={_("No recorded sessions")}
+                                 fullWidth={false}>
+                    {rows}
+                </Listing.Listing>
+            );
+            */
+            return (<div>Logs</div>);
+        }
     }
 
     /*
@@ -334,6 +381,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <Logs since={formatDateTime(r.start)} until={formatDateTime(r.end)} />
                         </div>
                     </div>
                 );
@@ -605,7 +653,7 @@
         componentDidMount() {
             let proc = cockpit.spawn(["getent", "passwd", "tlog"]);
 
-            proc.stream((data) => {
+            proc.done((data) => {
                 this.uid = data.split(":",3)[2];
                 this.journalctlStart();
                 proc.close();
