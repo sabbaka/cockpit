@@ -154,53 +154,51 @@
     let Logs = class extends React.Component {
         constructor(props) {
             super(props);
+            this.journalctlIngest = this.journalctlIngest.bind(this);
+            this.state = {
+                logs: [],
+            }
         }
 
-        getLogs() {
-            let matches = ['-u auditd'];
-            // let matches = [];
-            // let options = {follow: false, count: "all", since: this.props.since, until: this.props.until};
-            let options = {follow: false, count: "all"};
+        journalctlStart() {
+            // let matches = ['-u auditd'];
+            let matches = [];
+            let options = {follow: false, count: "all", since: this.props.since, until: this.props.until};
+            // let options = {follow: false, count: "all"};
 
             console.log('GET LOGS');
 
-            let journalctlIngest = function(entryList) {
-                console.log(entryList);
-            };
+            Journal.journalctl(matches, options).done(this.journalctlIngest);
+        }
 
-            Journal.journalctl(matches, options).stream(journalctlIngest);
+        journalctlIngest(entryList) {
+            console.log(entryList);
+            this.setState({logs: entryList});
         }
 
         componentDidMount() {
-            this.getLogs();
+            this.journalctlStart();
         }
 
-        render() {/*
-            let columnTitles = [_("User"), _("Start"), _("End"), _("Duration")];
-            let list = this.props.list;
+        render() {
+            let columnTitles = [_("Message")];
             let rows = [];
-            for (let i = 0; i < list.length; i++) {
-                let r = list[i];
-                let columns = [r.user,
-                               formatDateTime(r.start),
-                               formatDateTime(r.end),
-                               formatDuration(r.end - r.start)];
+            for (let i = 0; i < this.state.logs.length; i++) {
+                let r = this.state.logs[i];
+                let columns = [r.MESSAGE];
                 rows.push(<Listing.ListingRow
-                            rowId={r.id}
-                            columns={columns}
-                            navigateToItem={this.navigateToRecording.bind(this, r)}/>);
+                            rowId={i}
+                            columns={columns} />);
             }
 
             return (
                 <Listing.Listing title={_("Logs")}
                                  columnTitles={columnTitles}
-                                 emptyCaption={_("No recorded sessions")}
+                                 emptyCaption={_("No correlated logs")}
                                  fullWidth={false}>
                     {rows}
                 </Listing.Listing>
             );
-            */
-            return (<div>Logs</div>);
         }
     }
 
