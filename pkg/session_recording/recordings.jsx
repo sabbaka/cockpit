@@ -154,26 +154,40 @@
     let Logs = class extends React.Component {
         constructor(props) {
             super(props);
+            this.journalctlStart = this.journalctlStart.bind(this);
             this.journalctlIngest = this.journalctlIngest.bind(this);
+            this.journalctlError = this.journalctlError.bind(this);
+            this.journalctl = null;
             this.state = {
                 logs: [],
             }
         }
 
         journalctlStart() {
-            // let matches = ['-u auditd'];
-            let matches = [];
-            let options = {follow: false, count: "all", since: this.props.since, until: this.props.until};
+
+            let matches = ['-u auditd'];
+            // let matches = [];
+            let options = {follow: false, count: "all", since: '2017-07-01 00:00', until: '2017-08-24 00:00'};
+            // let options = {follow: false, count: "all", since: this.props.since, until: this.props.until};
             // let options = {follow: false, count: "all"};
 
             console.log('GET LOGS');
 
-            Journal.journalctl(matches, options).done(this.journalctlIngest);
+            this.journalctl = Journal.journalctl(matches, options).
+                                        fail( function(error) {
+                                            console.log(error);
+                                        }).
+                                        stream(this.journalctlIngest);
         }
 
         journalctlIngest(entryList) {
             console.log(entryList);
             this.setState({logs: entryList});
+        }
+
+        journalctlError(error) {
+            console.log(error);
+            console.warn(cockpit.message(error));
         }
 
         componentDidMount() {
@@ -192,12 +206,15 @@
             }
 
             return (
-                <Listing.Listing title={_("Logs")}
-                                 columnTitles={columnTitles}
-                                 emptyCaption={_("No correlated logs")}
-                                 fullWidth={false}>
-                    {rows}
-                </Listing.Listing>
+                <div>
+                    <div><button type="button" className="btn btn-default" onClick={this.journalctlStart}>Refresh</button></div>
+                    <Listing.Listing title={_("test logs")}
+                                     columnTitles={columnTitles}
+                                     emptyCaption={_("No correlated logs")}
+                                     fullWidth={false}>
+                        {rows}
+                    </Listing.Listing>
+                </div>
             );
         }
     }
@@ -257,12 +274,13 @@
 
         goBackToList() {
             console.log(cockpit.location.options);
-            if(cockpit.location.options.id) {
+            if (cockpit.location.options.id) {
                 delete cockpit.location.options.id;
                 cockpit.location.go([], cockpit.location.options);
                 return;
             }
             cockpit.location.go('/');
+            console.log(cockpit.location.options);
             return;
         }
 
