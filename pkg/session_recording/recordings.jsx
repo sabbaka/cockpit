@@ -166,21 +166,22 @@
         journalctlStart() {
 
             let matches = ['-u auditd'];
-            // let matches = [];
             let options = {follow: false, count: "all", since: '2017-07-01 00:00', until: '2017-08-24 00:00'};
-            // let options = {follow: false, count: "all", since: this.props.since, until: this.props.until};
-            // let options = {follow: false, count: "all"};
 
-            console.log('GET LOGS');
+            console.log('Getting logs');
 
             this.journalctl = Journal.journalctl(matches, options).
                                         fail( function(error) {
+                                            console.log('error');
                                             console.log(error);
+                                            this.journalctl.stop();
                                         }).
-                                        stream(this.journalctlIngest);
+                                        done(this.journalctlIngest);
         }
 
         journalctlIngest(entryList) {
+            console.log('entries');
+            this.journalctl.stop();
             console.log(entryList);
             this.setState({logs: entryList});
         }
