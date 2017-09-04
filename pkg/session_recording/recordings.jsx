@@ -29,6 +29,9 @@
     let Terminal = require("./terminal.jsx");
 
     require("bootstrap-datepicker/dist/js/bootstrap-datepicker");
+    require("patternfly/node_modules/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.css");
+    require("patternfly/node_modules/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js");
+
 
     /*
      * Convert a number to integer number string and pad with zeroes to
@@ -98,7 +101,19 @@
         }
 
         componentDidMount() {
+
             let funcDate = this.handleDateChange;
+            $(this.refs.datepicker).datetimepicker({
+                format: 'YYYY-MM-dd',
+            });
+            $(this.refs.datepicker).on('dp.change', function(e) {
+                let event = e;
+                console.log(event);
+                funcDate(event);
+            });
+
+/*
+            // let funcDate = this.handleDateChange;
             $(this.refs.datepicker).datepicker({
                 autoclose: true,
                 todayHighlight: true,
@@ -106,6 +121,7 @@
             }).on('changeDate', function(e) {
                 funcDate(e);
             });
+*/
         }
 
         componentWillUnmount() {
@@ -113,7 +129,10 @@
         }
 
         handleDateChange(e) {
-            this.props.onDateChange(e.target.value);
+            console.log(e);
+            console.log(e.target.value);
+            let date = e.target.value;
+            this.props.onDateChange(date);
         }
 
         render() {
@@ -559,7 +578,7 @@
                 matches.push("TLOG_USER=" + this.state.username);
             }
             let options = {follow: true, count: "all", since: this.state.dateSince, until: this.state.dateUntil};
-
+            console.log(options);
             if (this.state.recordingID !== null) {
                 matches.push("TLOG_REC=" + this.state.recordingID);
             }
@@ -607,10 +626,12 @@
         }
 
         handleDateSinceChange(date) {
-            this.setState({dateSince: date});
+            console.log(''+date);
+            this.setState({dateSince: ''+date});
         }
 
         handleDateUntilChange(date) {
+            console.log(date);
             this.setState({dateUntil: date});
         }
 
