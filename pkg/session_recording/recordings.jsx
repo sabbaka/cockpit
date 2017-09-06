@@ -104,7 +104,7 @@
 
             let funcDate = this.handleDateChange;
             $(this.refs.datepicker).datetimepicker({
-                format: 'YYYY-MM-dd',
+                format: 'YYYY-MM-DD',
             });
             $(this.refs.datepicker).on('dp.change', function(e) {
                 let event = e;
