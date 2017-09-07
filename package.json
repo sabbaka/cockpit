@@ -34,6 +34,7 @@
     "redux-saga": "0.16.0",
     "registry-image-widgets": "0.0.16",
     "requirejs": "2.1.22",
+    "bootstrap-datetime-picker": "2.4.4",
     "term.js-cockpit": "0.0.10"
   },
   "devDependencies": {
