@@ -463,7 +463,10 @@
             this.speedReset = this.speedReset.bind(this);
             this.fastForwardToEnd = this.fastForwardToEnd.bind(this);
             this.skipFrame = this.skipFrame.bind(this);
+            this.sync = this.sync.bind(this);
             this.handleKeyDown = this.handleKeyDown.bind(this);
+            this.zoomIn = this.zoomIn.bind(this);
+            this.zoomOut = this.zoomOut.bind(this);
 
             this.state = {
                 cols:       80,
@@ -473,6 +476,8 @@
                 paused:     true,
                 /* Speed exponent */
                 speedExp:   0,
+                scale: 1,
+                cursorBlink: false,
             };
 
             /* Auto-loading buffer of recording's packets */
@@ -591,6 +596,15 @@
             this.setState({ title: _("Player") + ": " + title });
         }
 
+        _transform() {
+            this.setState({ scale: 1});
+            var relation = Math.min(
+              630 / this.state.term.element.offsetWidth,
+              290 / this.state.term.element.offsetHeight
+            );
+            this.setState({ scale: relation});
+        }
+
         /* Synchronize playback */
         sync() {
             let locDelay;
@@ -620,6 +634,9 @@
 
                     /* Skip packets we don't output */
                     if (!pkt.is_io || !pkt.is_output) {
+                        this.setState({cols: pkt.width, rows: pkt.height});
+                        this.state.term.resize(pkt.width, pkt.height);
+                        this._transform();
                         continue;
                     }
 
@@ -728,6 +745,16 @@
             }
         }
 
+        zoomIn() {
+            let scale = this.state.scale;
+            this.setState({scale: scale + 0.1});
+        }
+
+        zoomOut() {
+            let scale = this.state.scale;
+            this.setState({scale: scale - 0.1});
+        }
+
         componentWillUpdate(nextProps, nextState) {
             /* If we changed pause state or speed exponent */
             if (nextState.paused != this.state.paused ||
@@ -758,6 +785,23 @@
                 speedStr = "";
             }
 
+            const style = {
+                "transform": "scale(" + this.state.scale + ")",
+                "transform-origin": "top left",
+                "display": "inline-block",
+            };
+
+            const scrollwrap = {
+                "min-width": "630px",
+                "height": "290px",
+                "background-color": "black",
+                "overflow": "hidden",
+            };
+
+            const to_right = {
+                "float": "right",
+            };
+
             // ensure react never reuses this div by keying it with the terminal widget
             return (
                 <div className="panel panel-default">
@@ -765,7 +809,9 @@
                         <span>{this.state.title}</span>
                     </div>
                     <div className="panel-body">
-                        <div ref="term" className="console-ct" key={this.state.term} />
+                        <div style={scrollwrap}>
+                            <div ref="term" className="console-ct" key={this.state.term} style={style} />
+                        </div>
                     </div>
                     <div className="panel-footer">
                         <button title="Play/Pause - Hotkey: p" type="button" ref="playbtn"
@@ -802,6 +848,10 @@
                             x2
                         </button>
                         <span>{speedStr}</span>
+                        <span style={to_right}>
+                            <button title="Zoom In" type="button" className="btn btn-default btn-lg" onClick={this.zoomIn}><i className="fa fa-search-plus" aria-hidden="true" /></button>
+                            <button title="Zoom Out" type="button" className="btn btn-default btn-lg" onClick={this.zoomOut}><i className="fa fa-search-minus" aria-hidden="true" /></button>
+                        </span>
                     </div>
                 </div>
             );
