@@ -351,7 +351,7 @@ table.listing-ct > thead th:last-child, tr.listing-ct-item td:last-child {
 .player-wrap {
     min-width: 672.97px;
     width: 672.97px;
-    height: auto;
+    height: 409px;
     overflow: hidden;
 }
 
