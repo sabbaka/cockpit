@@ -465,6 +465,8 @@
             this.skipFrame = this.skipFrame.bind(this);
             this.sync = this.sync.bind(this);
             this.handleKeyDown = this.handleKeyDown.bind(this);
+            this.zoomIn = this.zoomIn.bind(this);
+            this.zoomOut = this.zoomOut.bind(this);
             this._fixFontSize = this._fixFontSize.bind(this);
 
             this.state = {
@@ -753,6 +755,16 @@
             }
         }
 
+        zoomIn() {
+            let fontSize = this.state.fontSize;
+            this.setState({fontSize: fontSize + 0.1});
+        }
+
+        zoomOut() {
+            let fontSize = this.state.fontSize;
+            this.setState({fontSize: fontSize - 0.1});
+        }
+
         componentWillUpdate(nextProps, nextState) {
             /* If we changed pause state or speed exponent */
             if (nextState.paused != this.state.paused ||
@@ -794,6 +806,10 @@
                 "height": "290px",
                 "background-color": "black",
                 "overflow": "auto",
+            };
+
+            const to_right = {
+                "float": "right",
             };
 
             // ensure react never reuses this div by keying it with the terminal widget
@@ -843,6 +859,10 @@
                             x2
                         </button>
                         <span>{speedStr}</span>
+                        <span style={to_right}>
+                            <button title="Zoom In" type="button" className="btn btn-default btn-lg" onClick={this.zoomIn}><i className="fa fa-search-plus" aria-hidden="true" /></button>
+                            <button title="Zoom Out" type="button" className="btn btn-default btn-lg" onClick={this.zoomOut}><i className="fa fa-search-minus" aria-hidden="true" /></button>
+                        </span>
                     </div>
                 </div>
             );
