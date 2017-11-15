@@ -467,8 +467,8 @@
             this.handleKeyDown = this.handleKeyDown.bind(this);
             this.zoomIn = this.zoomIn.bind(this);
             this.zoomOut = this.zoomOut.bind(this);
-            this._fixFontSize = this._fixFontSize.bind(this);
-            this._isTermBroken = this._isTermBroken.bind(this);
+            // this._fixFontSize = this._fixFontSize.bind(this);
+            // this._isTermBroken = this._isTermBroken.bind(this);
 
             this.state = {
                 cols:       80,
@@ -479,6 +479,7 @@
                 /* Speed exponent */
                 speedExp:   0,
                 fontSize: 1,
+                scale: 1,
             };
 
             /* Auto-loading buffer of recording's packets */
@@ -598,6 +599,21 @@
             this.setState({ title: _("Player") + ": " + title });
         }
 
+        _transform() {
+            this.setState({ scale: 1});
+            let widthHeight = this.state.term.element.offsetWidth + this.state.term.element.offsetHeight;
+            let widthHeightCompare = 290 + 631;
+            console.log(widthHeight);
+            console.log(widthHeightCompare);
+            let relation = widthHeightCompare / widthHeight;
+            console.log(relation);
+
+            if (this.state.term.element.offsetHeight > 290 || this.state.term.element.offsetWidth > 631) {
+                this.setState({ scale: relation});
+            }
+        }
+
+/*
         _fixFontSize(fontSize) {
             if (this.state.term.element.offsetHeight > 290 || this._isTermBroken()) {
                 if (fontSize > 0.1) {
@@ -617,7 +633,7 @@
             });
             return !heightValues.reduce( (a, b) => { return (a === b) ? a : NaN; });
         }
-
+*/
         /* Synchronize playback */
         sync() {
             let locDelay;
@@ -649,7 +665,8 @@
                     if (!pkt.is_io || !pkt.is_output) {
                         this.setState({cols: pkt.width, rows: pkt.height});
                         this.state.term.resize(pkt.width, pkt.height);
-                        this._fixFontSize(1);
+                        // this._fixFontSize(1);
+                        this._transform();
                         continue;
                     }
 
@@ -800,7 +817,12 @@
 
             const style = {
                 "font-size": this.state.fontSize + "em",
-                "width": "auto",
+                // "width": "1980px",
+                // "height": "1080px",
+                "transform": "scale(" + this.state.scale + ")",
+                "transform-origin": "top left",
+                "display": "inline-block",
+
             };
 
             const scrollwrap = {
