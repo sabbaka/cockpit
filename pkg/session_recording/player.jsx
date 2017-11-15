@@ -468,6 +468,7 @@
             this.zoomIn = this.zoomIn.bind(this);
             this.zoomOut = this.zoomOut.bind(this);
             this._fixFontSize = this._fixFontSize.bind(this);
+            this._isTermBroken = this._isTermBroken.bind(this);
 
             this.state = {
                 cols:       80,
@@ -598,17 +599,23 @@
         }
 
         _fixFontSize(fontSize) {
-            if (this.state.term.element.offsetHeight > 290) {
+            if (this.state.term.element.offsetHeight > 290 || this._isTermBroken()) {
                 if (fontSize > 0.1) {
                     fontSize = fontSize - 0.1;
                     this.setState({fontSize: fontSize});
-                } else {
-                    return;
                 }
             } else {
                 return;
             }
             this._fixFontSize(fontSize);
+        }
+
+        _isTermBroken() {
+            let heightValues = [];
+            this.state.term.children.forEach( (value) => {
+                heightValues.push(value.offsetHeight);
+            });
+            return !heightValues.reduce( (a, b) => { return (a === b) ? a : NaN; });
         }
 
         /* Synchronize playback */
@@ -640,13 +647,9 @@
 
                     /* Skip packets we don't output */
                     if (!pkt.is_io || !pkt.is_output) {
-                        let fontSize = 1;
-                        if (pkt.width > this.state.cols || pkt.height > this.state.rows) {
-                            fontSize = this.state.fontSize;
-                        }
                         this.setState({cols: pkt.width, rows: pkt.height});
-                        this.state.term.resize(pkt.width,pkt.height);
-                        this._fixFontSize(fontSize);
+                        this.state.term.resize(pkt.width, pkt.height);
+                        this._fixFontSize(1);
                         continue;
                     }
 
@@ -797,15 +800,14 @@
 
             const style = {
                 "font-size": this.state.fontSize + "em",
-                "width": "1980px",
-                "height": "1080px",
+                "width": "auto",
             };
 
             const scrollwrap = {
-                "width": "630px",
+                "min-width": "631px",
                 "height": "290px",
                 "background-color": "black",
-                "overflow": "auto",
+                "overflow": "hidden",
             };
 
             const to_right = {
@@ -822,7 +824,6 @@
                         <div style={scrollwrap}>
                             <div ref="term" className="console-ct" key={this.state.term} style={style} />
                         </div>
-                        <div ref="term_fix" className="console-ct"></div>
                     </div>
                     <div className="panel-footer">
                         <button title="Play/Pause - Hotkey: p" type="button" ref="playbtn"
