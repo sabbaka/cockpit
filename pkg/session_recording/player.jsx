@@ -480,6 +480,7 @@
                 speedExp:   0,
                 fontSize: 1,
                 scale: 1,
+                cursorBlink: false,
             };
 
             /* Auto-loading buffer of recording's packets */
@@ -601,16 +602,11 @@
 
         _transform() {
             this.setState({ scale: 1});
-            let widthHeight = this.state.term.element.offsetWidth + this.state.term.element.offsetHeight;
-            let widthHeightCompare = 290 + 631;
-            console.log(widthHeight);
-            console.log(widthHeightCompare);
-            let relation = widthHeightCompare / widthHeight;
-            console.log(relation);
-
-            if (this.state.term.element.offsetHeight > 290 || this.state.term.element.offsetWidth > 631) {
-                this.setState({ scale: relation});
-            }
+            var relation = Math.min(
+              630 / this.state.term.element.offsetWidth,
+              290 / this.state.term.element.offsetHeight
+            );
+            this.setState({ scale: relation});
         }
 
 /*
@@ -826,7 +822,7 @@
             };
 
             const scrollwrap = {
-                "min-width": "631px",
+                "min-width": "630px",
                 "height": "290px",
                 "background-color": "black",
                 "overflow": "hidden",
