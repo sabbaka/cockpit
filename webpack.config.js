@@ -131,6 +131,10 @@ var info = {
             "session_recording/recordings.css",
         ],
 
+        "session_recording/config": [
+            "session_recording/config.jsx",
+        ],
+
         "systemd/services": [
             "systemd/init.js",
             "systemd/services.css",
@@ -257,6 +261,7 @@ var info = {
 
         "session_recording/manifest.json",
         "session_recording/index.html",
+        "session_recording/config.html",
 
         "systemd/index.html",
         "systemd/logs.html",
