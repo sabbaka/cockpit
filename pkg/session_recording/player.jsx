@@ -465,6 +465,9 @@
             this.skipFrame = this.skipFrame.bind(this);
             this.handleKeyDown = this.handleKeyDown.bind(this);
             this.sync = this.sync.bind(this);
+            this.zoomIn = this.zoomIn.bind(this);
+            this.zoomOut = this.zoomOut.bind(this);
+            this.fitTo = this.fitTo.bind(this);
 
             this.state = {
                 cols:       80,
@@ -475,7 +478,11 @@
                 /* Speed exponent */
                 speedExp:   0,
                 scale: 1,
+                scale_lock: false,
                 container_width: 630,
+                term_top_style: "50%",
+                term_left_style: "50%",
+                term_translate: "-50%, -50%",
             };
 
             /* Auto-loading buffer of recording's packets */
@@ -604,6 +611,9 @@
               290 / this.state.term.element.offsetHeight
             );
             this.setState({
+                term_top_style: "50%",
+                term_left_style: "50%",
+                term_translate: "-50%, -50%",
                 scale: relation,
                 cols: width,
                 rows: height
@@ -640,7 +650,9 @@
                     /* Skip packets we don't output */
                     if (!pkt.is_io || !pkt.is_output) {
                         this.state.term.resize(pkt.width, pkt.height);
-                        this._transform(pkt.width, pkt.height);
+                        if (!this.state.scale_lock) {
+                            this._transform(pkt.width, pkt.height);
+                        }
                         continue;
                     }
 
@@ -749,6 +761,40 @@
             }
         }
 
+        zoomIn() {
+            this.setState({
+                term_top_style: "0",
+                term_left_style: "0",
+                term_translate: "0, 0",
+                scale_lock: true,
+            });
+            let scale = this.state.scale;
+            this.setState({scale: scale + 0.1});
+        }
+
+        zoomOut() {
+            this.setState({
+                term_top_style: "0",
+                term_left_style: "0",
+                term_translate: "0, 0",
+                scale_lock: true,
+            });
+            let scale = this.state.scale;
+            if (scale > 0.1) {
+                this.setState({scale: scale - 0.1});
+            }
+        }
+
+        fitTo() {
+            this.setState({
+                term_top_style: "50%",
+                term_left_style: "50%",
+                term_translate: "-50%, -50%",
+                scale_lock: false,
+            });
+            this._transform();
+        }
+
         componentWillUpdate(nextProps, nextState) {
             /* If we changed pause state or speed exponent */
             if (nextState.paused != this.state.paused ||
@@ -780,13 +826,13 @@
             }
 
             const style = {
-                "transform": "scale(" + this.state.scale + ") translate(-50%, -50%)",
+                "transform": "scale(" + this.state.scale + ") translate(" + this.state.term_translate + ")",
                 "transform-origin": "top left",
                 "display": "inline-block",
                 "margin": "0 auto",
                 "position": "absolute",
-                "top": "50%",
-                "left": "50%",
+                "top": this.state.term_top_style,
+                "left": this.state.term_left_style,
             };
 
             const scrollwrap = {
@@ -795,6 +841,10 @@
                 "background-color": "#f5f5f5",
                 "overflow": "auto",
                 "position": "relative",
+            };
+
+            const to_right = {
+                "float": "right",
             };
 
             // ensure react never reuses this div by keying it with the terminal widget
@@ -843,6 +893,11 @@
                             x2
                         </button>
                         <span>{speedStr}</span>
+                        <span style={to_right}>
+                            <button title="Zoom In" type="button" className="btn btn-default btn-lg" onClick={this.zoomIn}><i className="fa fa-search-plus" aria-hidden="true" /></button>
+                            <button title="Fit To" type="button" className="btn btn-default btn-lg" onClick={this.fitTo}><i className="fa fa-expand" aria-hidden="true" /></button>
+                            <button title="Zoom Out" type="button" className="btn btn-default btn-lg" onClick={this.zoomOut}><i className="fa fa-search-minus" aria-hidden="true" /></button>
+                        </span>
                     </div>
                 </div>
             );
