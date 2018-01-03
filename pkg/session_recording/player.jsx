@@ -468,6 +468,9 @@
             this.zoomIn = this.zoomIn.bind(this);
             this.zoomOut = this.zoomOut.bind(this);
             this.fitTo = this.fitTo.bind(this);
+            this.dragPan = this.dragPan.bind(this);
+            this.dragPanEnable = this.dragPanEnable.bind(this);
+            this.dragPanDisable = this.dragPanDisable.bind(this);
             this.zoom = this.zoom.bind(this);
 
             this.state = {
@@ -488,6 +491,7 @@
                 term_scroll:        "hidden",
                 term_zoom_max:      false,
                 term_zoom_min:      false,
+                drag_pan:           false,
             };
 
             this.containerHeight = 290;
@@ -792,6 +796,49 @@
             }
         }
 
+        dragPan() {
+            (this.state.drag_pan ? this.dragPanDisable() : this.dragPanEnable());
+        }
+
+        dragPanEnable() {
+            this.setState({drag_pan: true});
+
+            let scrollwrap = this.refs.scrollwrap;
+
+            let clicked = false;
+            let clickX;
+            let clickY;
+
+            $(this.refs.scrollwrap).on({
+                'mousemove': function(e) {
+                    clicked && updateScrollPos(e);
+                },
+                'mousedown': function(e) {
+                    clicked = true;
+                    clickY = e.pageY;
+                    clickX = e.pageX;
+                },
+                'mouseup': function() {
+                    clicked = false;
+                    $('html').css('cursor', 'auto');
+                }
+            });
+
+            let updateScrollPos = function(e) {
+                $('html').css('cursor', 'move');
+                $(scrollwrap).scrollTop($(scrollwrap).scrollTop() + (clickY - e.pageY));
+                $(scrollwrap).scrollLeft($(scrollwrap).scrollLeft() + (clickX - e.pageX));
+            };
+        }
+
+        dragPanDisable() {
+            this.setState({drag_pan: false});
+            let scrollwrap = this.refs.scrollwrap;
+            $(scrollwrap).off("mousemove");
+            $(scrollwrap).off("mousedown");
+            $(scrollwrap).off("mouseup");
+        }
+
         zoomIn() {
             let scale = this.state.scale;
             if (scale < 2.1) {
@@ -882,7 +929,7 @@
                         <span>{this.state.title}</span>
                     </div>
                     <div className="panel-body">
-                        <div style={scrollwrap}>
+                        <div className={(this.state.drag_pan ? "dragnpan" : "")} style={scrollwrap} ref="scrollwrap">
                             <div ref="term" className="console-ct" key={this.state.term} style={style} />
                         </div>
                     </div>
@@ -922,6 +969,10 @@
                         </button>
                         <span>{speedStr}</span>
                         <span style={to_right}>
+                            <button title="Drag'n'Pan" type="button" className="btn btn-default btn-lg"
+                                onClick={this.dragPan}>
+                                <i className={"fa fa-" + (this.state.drag_pan ? "hand-rock-o" : "hand-paper-o")}
+                                    aria-hidden="true" /></button>
                             <button title="Zoom In - Hotkey: =" type="button" className="btn btn-default btn-lg"
                                 onClick={this.zoomIn} disabled={this.state.term_zoom_max}>
                                 <i className="fa fa-search-plus" aria-hidden="true" /></button>
