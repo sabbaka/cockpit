@@ -521,7 +521,8 @@
                 drag_pan:           false,
                 containerWidth: 630,
                 currentTsPost:  0,
-                scale:          1
+                scale:          1,
+                error:          null
             };
 
             this.containerHeight = 290;
@@ -626,6 +627,7 @@
         /* Handle packet retrieval error */
         handleError(error) {
             if (error !== null) {
+                this.setState({error: error});
                 console.warn(error);
             }
         }
@@ -973,6 +975,18 @@
                 return currentTS;
             };
 
+            let error = "";
+            if (this.state.error) {
+                error = (
+                    <div className="alert alert-danger alert-dismissable" >
+                        <button type="button" className="close" data-dismiss="alert" aria-hidden="true">
+                            <span className="pficon pficon-close" />
+                        </button>
+                        <span className="pficon pficon-error-circle-o" />
+                        {this.state.error}.
+                    </div>);
+            }
+
             // ensure react never reuses this div by keying it with the terminal widget
             return (
                 <div ref="wrapper" className="panel panel-default">
@@ -1039,6 +1053,7 @@
                                 fastForwardFunc={this.fastForwardToTS}/>
                         </div>
                     </div>
+                    {error}
                 </div>
             );
         }
