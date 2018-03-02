@@ -448,6 +448,24 @@
         }
     };
 
+    let ProgressBar = class extends React.Component {
+        constructor(props) {
+            super(props);
+        }
+
+        render() {
+            let progress = {
+                "width": parseInt((this.props.mark * 100) / this.props.length) + "%"
+            };
+
+            return (
+                <div className="progress" onClick={this.jumpTo}>
+                    <div className="progress-bar" role="progressbar" style={progress}></div>
+                </div>
+            );
+        }
+    };
+
     let Player = class extends React.Component {
         constructor(props) {
             super(props);
@@ -482,7 +500,6 @@
                 /* Speed exponent */
                 speedExp:           0,
                 container_width:    630,
-                scale:              1,
                 scale_initial:      1,
                 scale_lock:         false,
                 term_top_style:     "50%",
@@ -492,6 +509,9 @@
                 term_zoom_max:      false,
                 term_zoom_min:      false,
                 drag_pan:           false,
+                containerWidth: 630,
+                currentTsPost:  0,
+                scale:          1
             };
 
             this.containerHeight = 290;
@@ -569,6 +589,7 @@
             }
             /* Open the terminal */
             this.state.term.open(this.refs.term);
+            window.setInterval(this.sync, 100);
             /* Reset playback */
             this.reset();
         }
@@ -707,6 +728,8 @@
                         return;
                     }
                 }
+
+                this.setState({currentTsPost: parseInt(this.recTS)});
 
                 /* Output the packet */
                 if (this.pkt.is_io) {
@@ -919,7 +942,18 @@
             };
 
             const to_right = {
-                "float": "right",
+            "float": "right",
+            };
+
+            const progressbar_style = {
+                'margin-top': '10px',
+            };
+
+            const currentTsPost = function(currentTS, bufLength) {
+                if (currentTS > bufLength) {
+                    return bufLength;
+                }
+                return currentTS;
             };
 
             // ensure react never reuses this div by keying it with the terminal widget
@@ -982,6 +1016,9 @@
                                 onClick={this.zoomOut} disabled={this.state.term_zoom_min}>
                                 <i className="fa fa-search-minus" aria-hidden="true"/></button>
                         </span>
+                        <div style={progressbar_style}>
+                            <ProgressBar length={this.buf.pos} mark={currentTsPost(this.state.currentTsPost, this.buf.pos)}/>
+                        </div>
                     </div>
                 </div>
             );
