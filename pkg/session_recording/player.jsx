@@ -451,6 +451,15 @@
     let ProgressBar = class extends React.Component {
         constructor(props) {
             super(props);
+            this.jumpTo = this.jumpTo.bind(this);
+        }
+
+        jumpTo(e) {
+            if (this.props.fastForwardFunc) {
+                let percent = parseInt((e.offsetX * 100) / e.currentTarget.clientWidth);
+                let ts = parseInt((this.props.length * percent) / 100);
+                this.props.fastForwardFunc(ts);
+            }
         }
 
         render() {
@@ -483,6 +492,7 @@
             this.skipFrame = this.skipFrame.bind(this);
             this.handleKeyDown = this.handleKeyDown.bind(this);
             this.sync = this.sync.bind(this);
+            this.fastForwardToTS = this.fastForwardToTS.bind(this);
 
             this.state = {
                 cols:           80,
@@ -700,6 +710,7 @@
                     this.recTS += locDelay * this.speed;
                     let pktRecDelay = this.pkt.pos - this.recTS;
                     let pktLocDelay = pktRecDelay / this.speed;
+                    this.setState({currentTsPost: parseInt(this.recTS)});
                     /* If we're more than 5 ms early for this packet */
                     if (pktLocDelay > 5) {
                         /* Call us again on time, later */
@@ -707,8 +718,6 @@
                         return;
                     }
                 }
-
-                this.setState({currentTsPost: parseInt(this.recTS)});
 
                 /* Output the packet */
                 if (this.pkt.is_io) {
@@ -752,6 +761,14 @@
 
         fastForwardToEnd() {
             this.fastForwardTo = Infinity;
+            this.sync();
+        }
+
+        fastForwardToTS(ts) {
+            if (ts < this.recTS) {
+                this.reset();
+            }
+            this.fastForwardTo = ts;
             this.sync();
         }
 
@@ -881,7 +898,9 @@
                         </button>
                         <span>{speedStr}</span>
                         <div style={progressbar_style}>
-                            <ProgressBar length={this.buf.pos} mark={currentTsPost(this.state.currentTsPost, this.buf.pos)}/>
+                            <ProgressBar length={this.buf.pos}
+                                mark={currentTsPost(this.state.currentTsPost, this.buf.pos)}
+                                fastForwardFunc={this.fastForwardToTS}/>
                         </div>
                     </div>
                 </div>
