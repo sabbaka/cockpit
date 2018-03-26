@@ -18,17 +18,27 @@
  */
 // require("bootstrap-datetime-picker/css/bootstrap-datetimepicker.css");
 
-
-(function() {
+var $ = require("jquery");
+require("bootstrap-datetime-picker");
+$(function() {
     "use strict";
 
-    var $ = require("jquery");
     var cockpit = require("cockpit");
     var React = require("react");
-    var moment = require("moment");
+    let moment = require("moment");
+
     var journal = require("journal");
 
-    require("bootstrap-datetime-picker/js/bootstrap-datetimepicker.js");
+
+    // require("../lib/bootstrap-datetimepicker.css");
+    // require("bootstrap-datetime-picker/css/bootstrap-datetimepicker.css");
+    // require("bootstrap-datetime-picker/css/bootstrap-datetimepicker.min.css");
+    // let test = require("bootstrap-datetime-picker/css/bootstrap-datetimepicker.css");
+    // console.log(test);
+    // test = require("bootstrap-datetime-picker/css/bootstrap-datetimepicker.min.css");
+    // console.log(test);
+    // test = require("../lib/bootstrap-datetimepicker.css");
+    // console.log(test);
 
     cockpit.translate();
     var _ = cockpit.gettext;
@@ -218,6 +228,15 @@
         } else {
             all = true;
         }
+        // if (start == 'boot') {
+        //     options["boot"] = null;
+        // } else if (start == 'last-24h') {
+        //     options["since"] = "-1days";
+        // } else if (start == 'last-week') {
+        //     options["since"] = "-7days";
+        // } else {
+        //     all = true;
+        // }
 
         var last = null;
         var count = 0;
@@ -646,7 +665,7 @@
         var lines = orig[2].split('\n');
         lines[0] ='":' + lines[0].replace(/(\S+) (\S+) /g, '$1:$2 ');
         for (var i = 1; i < lines.length - 1; i++) {
-            lines[i] = lines[i].replace(new RegExp('//\s/\s+/g'), ':');
+                lines[i] = lines[i].replace(new RegExp('//\s/\s+/g'), ':');
         }
 
         return render_multitable(lines.join('\n'), ':');
@@ -808,6 +827,39 @@
         }
         $("body").show();
     }
+/*
+    let Datepicker = class extends React.Component {
+        constructor(props) {
+            super(props);
+            // this.handleDateChange = this.handleDateChange.bind(this);
+            // this.clearField = this.clearField.bind(this);
+            // this.markDateField = this.markDateField.bind(this);
+            // this.state = {
+            //     invalid: false,
+            //     date: this.props.date,
+            //     dateLastValid: null,
+            // };
+        }
+
+        render() {
+            return (
+            <div></div>
+            // <div className="btn-group" id="journal-current-day-menu">
+            //     <button className="btn btn-default dropdown-toggle" data-toggle="dropdown">
+            //         <span id="journal-current-day"></span>
+            //         <span class="caret"></span>
+            //     </button>
+            //     <ul className="dropdown-menu" role="menu">
+            //         <li><a data-op="recent" translatable="yes">Recent</a></li>
+            //         <li><a data-op="boot" translatable="yes">Current boot</a></li>
+            //         <li><a data-op="last-24h" translatable="yes">Last 24 hours</a></li>
+            //         <li><a data-op="last-week" translatable="yes">Last 7 days</a></li>
+            //     </ul>
+            // </div>
+            );
+        }
+    }
+*/
 
     let parseDate = function(date) {
         let regex = new RegExp(/^\s*(\d\d\d\d-\d\d-\d\d)(\s+(\d\d:\d\d(:\d\d)?))?\s*$/);
@@ -830,7 +882,7 @@
         }
 
         return false;
-    };
+    }
 
     /*
       * A component representing a date & time picker based on bootstrap-datetime-picker.
@@ -858,7 +910,6 @@
                 format: 'yyyy-mm-dd hh:ii:00',
                 autoclose: true,
                 todayBtn: true,
-                pickerPosition: 'bottom-right',
             });
             datepicker.on('changeDate', function(e) {
                 funcDate(e);
@@ -910,7 +961,7 @@
 
         render() {
             return (
-                <div ref="datepicker" className="input-group date input-append date form_datetime" data-date="12-02-2012" data-date-format="dd-mm-yyyy">
+                <div ref="datepicker" className="input-group date input-append date form_datetime">
                     <input ref="datepicker_input" type="text" size="16"
                            className={"form-control bootstrap-datepicker " + (this.state.invalid ? "invalid" : "valid")}
                            readonly value={this.state.date} onChange={this.handleDateChange} />
@@ -920,7 +971,7 @@
                 </div>
             );
         }
-    };
+    }
 
     let changeDate = function(date) {
         cockpit.location.go([], $.extend(cockpit.location.options, { start: date }));
@@ -929,6 +980,10 @@
     React.render(<Datetimepicker onDateChange={changeDate} />, document.getElementById('datepicker'));
 
     $(cockpit).on("locationchanged", update);
+
+    // $('#journal-current-day-menu a').on('click', function() {
+    //     cockpit.location.go([], $.extend(cockpit.location.options, { start: $(this).attr("data-op") }));
+    // });
 
     $('#journal-box').on('click', '.cockpit-logline', function() {
          var cursor = $(this).attr('data-cursor');
@@ -945,4 +1000,4 @@
     });
 
     update();
-}());
+});
