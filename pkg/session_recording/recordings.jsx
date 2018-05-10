@@ -223,12 +223,213 @@
         }
     }
 
-    /*
-     * A component representing a single recording view.
-     * Properties:
-     * - recording: either null for no recording data available yet, or a
-     *              recording object, as created by the View below.
+    /**
+     * Performs equality by iterating through keys on an object and returning false
+     * when any key has values which are not strictly equal between the arguments.
+     * Returns true when the values of all keys are strictly equal.
      */
+    function shallowEqual(objA: mixed, objB: mixed): boolean {
+        if (objA === objB) {
+            return true;
+        }
+
+        if (typeof objA !== 'object' || objA === null ||
+            typeof objB !== 'object' || objB === null) {
+            return false;
+        }
+
+        var keysA = Object.keys(objA);
+        var keysB = Object.keys(objB);
+
+        if (keysA.length !== keysB.length) {
+            return false;
+        }
+
+        // Test for A's keys different from B.
+        var bHasOwnProperty = hasOwnProperty.bind(objB);
+        for (var i = 0; i < keysA.length; i++) {
+            if (!bHasOwnProperty(keysA[i]) || objA[keysA[i]] !== objB[keysA[i]]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function shallowCompare(instance, nextProps, nextState) {
+        return (
+            !shallowEqual(instance.props, nextProps) ||
+            !shallowEqual(instance.state, nextState)
+        );
+    }
+
+    function LogElement(props) {
+        const entry = props.entry;
+        const start = props.start;
+        const end = props.end;
+        const entry_timestamp = entry.__REALTIME_TIMESTAMP / 1000;
+        let className = 'cockpit-logline';
+        if (start < entry_timestamp && end > entry_timestamp) {
+            className = 'cockpit-logline highlighted';
+        }
+        return (
+            <div className={className} data-cursor={entry.__CURSOR}>
+                <div className="cockpit-log-warning">
+                    <i className="fa fa-exclamation-triangle"></i>
+                </div>
+                <div className="cockpit-log-time">{formatDateTime(parseInt(entry.__REALTIME_TIMESTAMP / 1000 ))}</div>
+                <span className="cockpit-log-message">{entry.MESSAGE}</span>
+                <div className="cockpit-log-service">kernel</div>
+            </div>
+        );
+    }
+
+    function LogsView(props) {
+        const entries = props.entries;
+        const start = props.start;
+        const end = props.end;
+        const rows = entries.map((entry) =>
+            <LogElement entry={entry} start={start} end={end} />
+        );
+        return (
+            <div className="panel panel-default cockpit-log-panel">
+                {rows}
+            </div>
+        );
+    }
+
+    let Logs = class extends React.Component {
+        constructor(props) {
+            super(props);
+            this.journalctlError = this.journalctlError.bind(this);
+            this.journalctlIngest = this.journalctlIngest.bind(this);
+            this.journalctlPrepend = this.journalctlPrepend.bind(this);
+            this.getLogs = this.getLogs.bind(this);
+            this.loadLater = this.loadLater.bind(this);
+            this.loadEarlier = this.loadEarlier.bind(this);
+            this.journalCtl = null;
+            this.entries = [];
+            this.earlier_than = null;
+            this.load_earlier = false;
+            this.state = {
+                cursor: null,
+                after: null,
+                start: null,
+                end: null,
+                entries: [],
+            };
+        }
+
+        shouldComponentUpdate(nextProps, nextState) {
+            return shallowCompare(this, nextProps, nextState);
+        }
+
+        journalctlError(error) {
+            console.warn(cockpit.message(error));
+        }
+
+        journalctlIngest(entryList) {
+            if (this.load_earlier === true) {
+                entryList.push(...this.entries);
+                this.entries = entryList;
+                this.setState({entries: this.entries });
+                this.load_earlier = false;
+            } else {
+                if (entryList.length > 0) {
+                    this.entries.push(...entryList);
+                    const after = this.entries[this.entries.length-1].__CURSOR;
+                    this.setState({entries: this.entries, after: after});
+                }
+            }
+        }
+
+        journalctlPrepend(entryList) {
+            entryList.push(...this.entries);
+            this.setState({entries: this.entries});
+        }
+
+        getLogs() {
+            if (this.state.start != null && this.state.end != null) {
+                if (this.journalCtl != null) {
+                    this.journalCtl.stop();
+                    this.journalCtl = null;
+                }
+
+                let matches = [];
+
+                let options = {
+                    since: formatDateTime(this.state.start),
+                    until: formatDateTime(this.state.end),
+                    follow: false,
+                    count: 10,
+                };
+
+                if (this.load_earlier === true) {
+                    options["until"] = formatDateTime(this.earlier_than);
+                    options["count"] = "all";
+                } else if (this.state.after != null) {
+                    options["after"] = this.state.after;
+                    delete options.since;
+                }
+
+                const self = this;
+                this.journalCtl = Journal.journalctl(matches, options).
+                fail(this.journalctlError).
+                done( function(data) {
+                    self.journalctlIngest(data);
+                });
+            }
+        }
+
+        loadEarlier() {
+            this.load_earlier = true;
+            const start = this.state.start - 36000;
+            this.setState({start: start});
+        }
+
+        loadLater() {
+            const end = this.state.end + 3600;
+            this.setState({end: end});
+        }
+
+        componentDidUpdate() {
+            if (this.props.recording) {
+                if (this.state.start === null && this.state.end === null) {
+                    let end = this.props.recording.start + 3600;
+                    this.setState({start: this.props.recording.start, end: end});
+                    this.earlier_than = this.props.recording.start;
+                }
+                this.getLogs();
+            }
+        }
+
+        render() {
+            if (this.props.recording) {
+                return (
+                    <div className="panel panel-default">
+                        <div className="panel-heading">
+                            <span>Logs</span>
+                            <button className="btn btn-default" style={{"float":"right"}} onClick={this.loadEarlier}>Load earlier entries</button>
+                        </div>
+                        <LogsView entries={this.state.entries} start={this.props.recording.start}
+                                  end={this.props.recording.end} />
+                        <div className="panel-heading">
+                            <button className="btn btn-default" onClick={this.loadLater}>Load later entries</button>
+                        </div>
+                    </div>
+                );
+            } else {
+                return (<div>Loading...</div>);
+            }
+        }
+    }
+
+        /*
+         * A component representing a single recording view.
+         * Properties:
+         * - recording: either null for no recording data available yet, or a
+         *              recording object, as created by the View below.
+         */
     let Recording = class extends React.Component {
         constructor(props) {
             super(props);
@@ -732,8 +933,17 @@
                 );
             } else {
                 return (
-                    <Recording recording={this.recordingMap[this.state.recordingID]} />
-                );
+                    <div>
+                        <Recording recording={this.recordingMap[this.state.recordingID]} />
+                        <div className="container-fluid">
+                            <div className="row">
+                                <div className="col-md-12">
+                                    <Logs recording={this.recordingMap[this.state.recordingID]} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            );
             }
         }
     };
