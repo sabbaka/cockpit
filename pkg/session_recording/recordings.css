@@ -366,3 +366,7 @@ table.listing-ct > thead th:last-child, tr.listing-ct-item td:last-child {
     -ms-user-select: none;
     user-select: none;
 }
+
+.highlighted {
+    background-color: #ededed !important;
+}
