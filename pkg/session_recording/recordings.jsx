@@ -223,12 +223,206 @@
         }
     }
 
-    /*
-     * A component representing a single recording view.
-     * Properties:
-     * - recording: either null for no recording data available yet, or a
-     *              recording object, as created by the View below.
+    /**
+     * Performs equality by iterating through keys on an object and returning false
+     * when any key has values which are not strictly equal between the arguments.
+     * Returns true when the values of all keys are strictly equal.
      */
+    function shallowEqual(objA: mixed, objB: mixed): boolean {
+        if (objA === objB) {
+            return true;
+        }
+
+        if (typeof objA !== 'object' || objA === null ||
+            typeof objB !== 'object' || objB === null) {
+            return false;
+        }
+
+        var keysA = Object.keys(objA);
+        var keysB = Object.keys(objB);
+
+        if (keysA.length !== keysB.length) {
+            return false;
+        }
+
+        // Test for A's keys different from B.
+        var bHasOwnProperty = hasOwnProperty.bind(objB);
+        for (var i = 0; i < keysA.length; i++) {
+            if (!bHasOwnProperty(keysA[i]) || objA[keysA[i]] !== objB[keysA[i]]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function shallowCompare(instance, nextProps, nextState) {
+        return (
+            !shallowEqual(instance.props, nextProps) ||
+            !shallowEqual(instance.state, nextState)
+        );
+    }
+
+    let LogElement = class extends React.Component {
+        constructor(props) {
+            super(props);
+        }
+
+        render() {
+            return (
+                //<div className="panel panel-default cockpit-log-panel">
+                    //<div className="panel-heading"></div>
+                    <div className="cockpit-logline" data-cursor={this.props.entry.__CURSOR}>
+                        <div className="cockpit-log-warning">
+                            <i className="fa fa-exclamation-triangle"></i>
+                        </div>
+                        <div className="cockpit-log-time">{formatDateTime(parseInt(this.props.entry.__MONOTONIC_TIMESTAMP))}</div>
+                        <span className="cockpit-log-message">{this.props.entry.MESSAGE}</span>
+                        <div className="cockpit-log-service">kernel</div>
+                    </div>
+                // </div>
+            );
+        }
+    }
+
+    let LogsView = class extends React.Component {
+        constructor(props) {
+            super(props);
+        }
+
+        render() {
+            return (
+
+                React.createElement("div", null,
+                    this.props.entries.map(function(entry){
+                        return (<LogElement entry={entry}/>)
+                    })
+                )
+            );
+
+        }
+    }
+
+    let Logs = class extends React.Component {
+        constructor(props) {
+            super(props);
+            // TODO more this.props.since & this.props.until here and store them and use all over.
+            this.journalctlError = this.journalctlError.bind(this);
+            this.journalctlIngest = this.journalctlIngest.bind(this);
+            this.getLogs = this.getLogs.bind(this);
+            this.loadLater = this.loadLater.bind(this);
+            this.journalCtl = null;
+            this.entries = [];
+            this.cursor_past = null;
+            this.cursor = null;
+            // this.entries = [];
+            this.state = {
+                entries: [],
+            };
+        }
+
+        componentWillReceiveProps() {
+
+        }
+
+        shouldComponentUpdate(nextProps, nextState) {
+            return shallowCompare(this, nextProps, nextState);
+        }
+
+        journalctlError(error) {
+            console.warn(cockpit.message(error));
+        }
+
+        journalctlIngest(entryList) {
+            console.log(entryList);
+            let entries = [];
+            for (let entry in entryList) {
+                entries.push(entryList[entry]);
+            }
+            console.log(entries);
+            this.entries = entries;
+            this.setState({entries:entries});
+            this.cursor_past = entries[0].__CURSOR;
+            this.cursor = entries[entries.length-1].__CURSOR;
+            // later remote .stop() and load continiously.
+            this.journalCtl.stop();
+        }
+
+        getLogs() {
+            let matches = [];
+
+            let since = formatDateTime(this.props.recording.start);
+            let until = null;
+            if (this.props.recording.start != this.props.recording.end) {
+                until = formatDateTime(this.props.recording.end);
+            }
+
+            let options = {
+                cursor: this.cursor,
+                since: since,
+                until: until,
+                follow: true,
+                count: "all",
+            };
+            console.log(options);
+            this.journalCtl = Journal.journalctl(matches, options).
+                fail(this.journalctlError).
+                stream(this.journalctlIngest);
+        }
+
+
+        loadLater() {
+            console.log('load later');
+            let matches = [];
+
+            let since = formatDateTime(this.props.recording.until);
+
+            let until = formatDateTime(this.props.recording.until + 3600000);
+            
+            this.cursor = null;
+
+            let options = {
+                cursor: this.cursor,
+                since: since,
+                until: until,
+                follow: true,
+                count: "all",
+            };
+            this.journalCtl.stop();
+            this.journalCtl = Journal.journalctl(matches, options).
+            fail(this.journalctlError).
+            stream(this.journalctlIngest);
+            console.log('load later 1');
+        }
+
+        render() {
+            if (this.props.recording) {
+                this.getLogs();
+
+                return (
+                    <div>
+                        <h1>Logs</h1>
+                        <div>
+                            <button className="btn btn-default">Load earlier entries</button>
+                        </div>
+                        <LogsView entries={this.entries} />
+                        <div>
+                            <button className="btn btn-default" onClick={this.loadLater}>Load later entries</button>
+                        </div>
+                    </div>
+                );
+            } else {
+                return (<div>Loading...</div>);
+            }
+        }
+    }
+
+        /*
+         * A component representing a single recording view.
+         * Properties:
+         * - recording: either null for no recording data available yet, or a
+         *              recording object, as created by the View below.
+         */
     let Recording = class extends React.Component {
         constructor(props) {
             super(props);
@@ -242,7 +436,14 @@
                 cockpit.location.go('/');
             }
         }
-
+/*
+        componentDidUpdate() {
+            let r = this.props.recording;
+            if (r) {
+                console.log(r);
+            }
+        }
+*/
         render() {
             let r = this.props.recording;
             if (r == null) {
@@ -732,8 +933,11 @@
                 );
             } else {
                 return (
-                    <Recording recording={this.recordingMap[this.state.recordingID]} />
-                );
+                    <div>
+                        <Recording recording={this.recordingMap[this.state.recordingID]} />
+                        <Logs recording={this.recordingMap[this.state.recordingID]} />
+                    </div>
+            );
             }
         }
     };
