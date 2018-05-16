@@ -28,6 +28,8 @@
     let React = require("react");
     let Listing = require("cockpit-components-listing.jsx");
     let Player = require("./player.jsx");
+    let underscore = require("underscore");
+    console.log(underscore);
 
     require("bootstrap-datetime-picker/js/bootstrap-datetimepicker.js");
     require("bootstrap-datetime-picker/css/bootstrap-datetimepicker.css");
@@ -269,14 +271,18 @@
         }
 
         render() {
+            let style = {
+                'background-color': ( (this.props.inSessionTime === true) ? 'grey' : 'white' ),
+            };
+
             return (
                 //<div className="panel panel-default cockpit-log-panel">
                     //<div className="panel-heading"></div>
-                    <div className="cockpit-logline" data-cursor={this.props.entry.__CURSOR}>
+                    <div className="cockpit-logline" data-cursor={this.props.entry.__CURSOR} style={style}>
                         <div className="cockpit-log-warning">
                             <i className="fa fa-exclamation-triangle"></i>
                         </div>
-                        <div className="cockpit-log-time">{formatDateTime(parseInt(this.props.entry.__MONOTONIC_TIMESTAMP))}</div>
+                        <div className="cockpit-log-time">{formatDateTime(parseInt(this.props.entry.__REALTIME_TIMESTAMP / 1000 ))}</div>
                         <span className="cockpit-log-message">{this.props.entry.MESSAGE}</span>
                         <div className="cockpit-log-service">kernel</div>
                     </div>
@@ -288,16 +294,57 @@
     let LogsView = class extends React.Component {
         constructor(props) {
             super(props);
+            this.inSessionTime = this.inSessionTime.bind(this);
+            this.rows = [];
+            this.state = {
+                rows: [],
+            }
+        }
+
+        inSessionTime(entry) {
+            const timestamp = entry.__REALTIME_TIMESTAMP / 1000;
+            /*
+            console.log(this.props.start);
+            console.log(entry.__REALTIME_TIMESTAMP);
+            console.log(timestamp);
+            console.log(this.props.end);
+            */
+            if ( this.props.start < timestamp && timestamp < this.props.end) {
+                return true;
+            }
+            return false;
         }
 
         render() {
-            return (
+            let rows = [];
+            for (let i = 0; i < this.props.entries.length; i++) {
+                rows.push(<LogElement entry={this.props.entries[i]} inSessionTime={this.inSessionTime(this.props.entries[i])} />);
+            }
 
-                React.createElement("div", null,
-                    this.props.entries.map(function(entry){
-                        return (<LogElement entry={entry}/>)
-                    })
-                )
+            // let rows_all = [];
+
+            // rows_all.concat(this.rows, rows);
+
+            // this.rows.concat(rows);
+            // console.log(rows);
+            // console.log(this.rows);
+
+            // this.rows = this.rows;
+            // if (this.rows === []) {
+            //     this.rows = rows;
+            // } else {
+            //     this.rows = underscore.intersection(this.rows, rows);
+            // }
+
+            this.rows.push.apply(this.rows, rows);
+
+            // this.setState({rows: rows_all});
+
+            return (
+                <div className="panel panel-default cockpit-log-panel">
+                <div className="panel-heading"></div>
+                    {this.rows}
+                </div>
             );
 
         }
@@ -306,23 +353,20 @@
     let Logs = class extends React.Component {
         constructor(props) {
             super(props);
-            // TODO more this.props.since & this.props.until here and store them and use all over.
             this.journalctlError = this.journalctlError.bind(this);
             this.journalctlIngest = this.journalctlIngest.bind(this);
             this.getLogs = this.getLogs.bind(this);
             this.loadLater = this.loadLater.bind(this);
+            this.loadEarlier = this.loadEarlier.bind(this);
             this.journalCtl = null;
             this.entries = [];
-            this.cursor_past = null;
-            this.cursor = null;
-            // this.entries = [];
             this.state = {
+                cursor: null,
+                after: null,
+                start: this.props.start,
+                end: this.props.end,
                 entries: [],
             };
-        }
-
-        componentWillReceiveProps() {
-
         }
 
         shouldComponentUpdate(nextProps, nextState) {
@@ -334,28 +378,36 @@
         }
 
         journalctlIngest(entryList) {
+            // let entries = [];
+            // for (let entry in entryList) {
+            //     entries.push(entryList[entry]);
+            // }
+            // this.entries = entries;
+            // this.setState({entries:entries});
+            // this.cursor_past = entries[0].__CURSOR;
+            // this.cursor = entries[entries.length-1].__CURSOR;
             console.log(entryList);
-            let entries = [];
-            for (let entry in entryList) {
-                entries.push(entryList[entry]);
-            }
-            console.log(entries);
-            this.entries = entries;
-            this.setState({entries:entries});
-            this.cursor_past = entries[0].__CURSOR;
-            this.cursor = entries[entries.length-1].__CURSOR;
-            // later remote .stop() and load continiously.
-            this.journalCtl.stop();
+            this.entries = [];
+            this.entries = entryList;
+            this.cursor_past = entryList[0].__CURSOR;
+            this.cursor = entryList[entryList.length-1].__CURSOR;
         }
 
         getLogs() {
+            if (this.journalCtl != null) {
+                this.journalCtl.stop();
+                this.journalCtl = null;
+            }
+
             let matches = [];
 
-            let since = formatDateTime(this.props.recording.start);
+            let since = formatDateTime(this.state.start);
             let until = null;
-            if (this.props.recording.start != this.props.recording.end) {
-                until = formatDateTime(this.props.recording.end);
+            if (this.state.start != this.state.end) {
+                until = formatDateTime(this.state.end);
             }
+
+            console.log('1st loaded since:', since, 'until', until);
 
             let options = {
                 cursor: this.cursor,
@@ -364,35 +416,23 @@
                 follow: true,
                 count: "all",
             };
-            console.log(options);
+            // console.log(options);
             this.journalCtl = Journal.journalctl(matches, options).
                 fail(this.journalctlError).
                 stream(this.journalctlIngest);
         }
 
+        loadEarlier() {
+            this.loadDirection = 'earlier';
+            let start = this.state.start;
+            this.setState({start: start - 36000});
+            this.getLogs();
+        }
 
         loadLater() {
-            console.log('load later');
-            let matches = [];
-
-            let since = formatDateTime(this.props.recording.until);
-
-            let until = formatDateTime(this.props.recording.until + 3600000);
-            
-            this.cursor = null;
-
-            let options = {
-                cursor: this.cursor,
-                since: since,
-                until: until,
-                follow: true,
-                count: "all",
-            };
-            this.journalCtl.stop();
-            this.journalCtl = Journal.journalctl(matches, options).
-            fail(this.journalctlError).
-            stream(this.journalctlIngest);
-            console.log('load later 1');
+            this.loadDirection = 'later';
+            let end = this.state.end;
+            this.setState({end: end + 36000});
         }
 
         render() {
@@ -403,9 +443,10 @@
                     <div>
                         <h1>Logs</h1>
                         <div>
-                            <button className="btn btn-default">Load earlier entries</button>
+                            <button className="btn btn-default" onClick={this.loadEarlier}>Load earlier entries</button>
                         </div>
-                        <LogsView entries={this.entries} />
+                        <LogsView entries={this.entries} loadDirection={this.loadDirection}
+                                  start={this.props.recording.start} end={this.props.recording.end} />
                         <div>
                             <button className="btn btn-default" onClick={this.loadLater}>Load later entries</button>
                         </div>
@@ -935,7 +976,9 @@
                 return (
                     <div>
                         <Recording recording={this.recordingMap[this.state.recordingID]} />
-                        <Logs recording={this.recordingMap[this.state.recordingID]} />
+                        <Logs recording={this.recordingMap[this.state.recordingID]}
+                              start={this.recordingMap[this.state.recordingID].start}
+                              end={this.recordingMap[this.state.recordingID].end} />
                     </div>
             );
             }
