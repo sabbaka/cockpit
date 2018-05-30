@@ -265,89 +265,34 @@
         );
     }
 
-    let LogElement = class extends React.Component {
-        constructor(props) {
-            super(props);
-        }
-
-        render() {
-            let style = {
-                'background-color': ( (this.props.inSessionTime === true) ? 'grey' : 'white' ),
-            };
-
-            return (
-                //<div className="panel panel-default cockpit-log-panel">
-                    //<div className="panel-heading"></div>
-                    <div className="cockpit-logline" data-cursor={this.props.entry.__CURSOR} style={style}>
-                        <div className="cockpit-log-warning">
-                            <i className="fa fa-exclamation-triangle"></i>
-                        </div>
-                        <div className="cockpit-log-time">{formatDateTime(parseInt(this.props.entry.__REALTIME_TIMESTAMP / 1000 ))}</div>
-                        <span className="cockpit-log-message">{this.props.entry.MESSAGE}</span>
-                        <div className="cockpit-log-service">kernel</div>
-                    </div>
-                // </div>
-            );
-        }
+    function LogElement(props) {
+        const entry = props.entry;
+        return (
+            <div className="cockpit-logline" data-cursor={entry.__CURSOR}>
+                <div className="cockpit-log-warning">
+                    <i className="fa fa-exclamation-triangle"></i>
+                </div>
+                <div className="cockpit-log-time">{formatDateTime(parseInt(entry.__REALTIME_TIMESTAMP / 1000 ))}</div>
+                <span className="cockpit-log-message">{entry.MESSAGE}</span>
+                <div className="cockpit-log-service">kernel</div>
+            </div>
+        );
     }
 
-    let LogsView = class extends React.Component {
-        constructor(props) {
-            super(props);
-            this.inSessionTime = this.inSessionTime.bind(this);
-            this.rows = [];
-            this.state = {
-                rows: [],
-            }
-        }
-
-        inSessionTime(entry) {
-            const timestamp = entry.__REALTIME_TIMESTAMP / 1000;
-            /*
-            console.log(this.props.start);
-            console.log(entry.__REALTIME_TIMESTAMP);
-            console.log(timestamp);
-            console.log(this.props.end);
-            */
-            if ( this.props.start < timestamp && timestamp < this.props.end) {
-                return true;
-            }
-            return false;
-        }
-
-        render() {
-            let rows = [];
-            for (let i = 0; i < this.props.entries.length; i++) {
-                rows.push(<LogElement entry={this.props.entries[i]} inSessionTime={this.inSessionTime(this.props.entries[i])} />);
-            }
-
-            // let rows_all = [];
-
-            // rows_all.concat(this.rows, rows);
-
-            // this.rows.concat(rows);
-            // console.log(rows);
-            // console.log(this.rows);
-
-            // this.rows = this.rows;
-            // if (this.rows === []) {
-            //     this.rows = rows;
-            // } else {
-            //     this.rows = underscore.intersection(this.rows, rows);
-            // }
-
-            this.rows.push.apply(this.rows, rows);
-
-            // this.setState({rows: rows_all});
-
-            return (
-                <div className="panel panel-default cockpit-log-panel">
+    function LogsView(props) {
+        // console.log(props);
+        const entries = props.entries;
+        // console.log(entries);
+        const rows = entries.map((entry) =>
+            <LogElement entry={entry} />
+        );
+        // console.log(rows);
+        return (
+            <div className="panel panel-default cockpit-log-panel">
                 <div className="panel-heading"></div>
-                    {this.rows}
-                </div>
-            );
-
-        }
+                {rows}
+            </div>
+        );
     }
 
     let Logs = class extends React.Component {
@@ -363,8 +308,8 @@
             this.state = {
                 cursor: null,
                 after: null,
-                start: this.props.start,
-                end: this.props.end,
+                start: null,
+                end: null,
                 entries: [],
             };
         }
@@ -385,68 +330,83 @@
             // this.entries = entries;
             // this.setState({entries:entries});
             // this.cursor_past = entries[0].__CURSOR;
-            // this.cursor = entries[entries.length-1].__CURSOR;
-            console.log(entryList);
-            this.entries = [];
-            this.entries = entryList;
-            this.cursor_past = entryList[0].__CURSOR;
-            this.cursor = entryList[entryList.length-1].__CURSOR;
+
+            // console.log(entryList);
+            this.entries.push(...entryList);
+            // console.log(this.entries);
+
+            // this.entries = [];
+
+            // this.entries = entryList;
+            if (entryList.length > 0) {
+                const after = this.entries[this.entries.length-1].__CURSOR;
+                this.setState({entries: this.entries, after: after});
+                // this.cursor_past = entryList[0].__CURSOR;
+                // this.cursor = entryList[entryList.length-1].__CURSOR;
+            }
         }
 
         getLogs() {
-            if (this.journalCtl != null) {
-                this.journalCtl.stop();
-                this.journalCtl = null;
-            }
+            if (this.state.start != null && this.state.end != null) {
+                if (this.journalCtl != null) {
+                    this.journalCtl.stop();
+                    this.journalCtl = null;
+                }
 
-            let matches = [];
+                let matches = [];
 
-            let since = formatDateTime(this.state.start);
-            let until = null;
-            if (this.state.start != this.state.end) {
-                until = formatDateTime(this.state.end);
-            }
+                let options = {
+                    cursor: this.cursor,
+                    since: formatDateTime(this.props.recording.start),
+                    until: formatDateTime(this.props.recording.end),
+                    follow: false,
+                    count: "all",
+                };
 
-            console.log('1st loaded since:', since, 'until', until);
-
-            let options = {
-                cursor: this.cursor,
-                since: since,
-                until: until,
-                follow: true,
-                count: "all",
-            };
-            // console.log(options);
-            this.journalCtl = Journal.journalctl(matches, options).
+                const self = this;
+                this.journalCtl = Journal.journalctl(matches, options).
                 fail(this.journalctlError).
-                stream(this.journalctlIngest);
+                done( function(data) {
+                    console.log(data);
+                    self.journalctlIngest(data);
+                });
+            }
         }
 
         loadEarlier() {
-            this.loadDirection = 'earlier';
-            let start = this.state.start;
-            this.setState({start: start - 36000});
+            const start = this.state.start - 36000;
+            this.setState({start: start});
             this.getLogs();
+            console.log(formatDateTime(this.state.start));
         }
 
         loadLater() {
-            this.loadDirection = 'later';
-            let end = this.state.end;
-            this.setState({end: end + 36000});
+            console.log(this.state.end);
+            const end = this.state.end + 360000;
+            console.log(end);
+            console.log(formatDateTime(this.state.end))
+            this.setState({end: end});
+            console.log(formatDateTime(this.state.end));
+        }
+
+        componentDidUpdate() {
+            if (this.props.recording) {
+                if (this.state.start === null && this.state.end ===null) {
+                    this.setState({start: this.props.recording.start, end: this.props.recording.end});
+                }
+                this.getLogs();
+            }
         }
 
         render() {
             if (this.props.recording) {
-                this.getLogs();
-
                 return (
                     <div>
                         <h1>Logs</h1>
                         <div>
-                            <button className="btn btn-default" onClick={this.loadEarlier}>Load earlier entries</button>
+                            <button className="btn btn-default" onClick={this.loadEarlier} disabled="disabled">Load earlier entries</button>
                         </div>
-                        <LogsView entries={this.entries} loadDirection={this.loadDirection}
-                                  start={this.props.recording.start} end={this.props.recording.end} />
+                        <LogsView entries={this.state.entries} start={this.state.start} end={this.state.end} />
                         <div>
                             <button className="btn btn-default" onClick={this.loadLater}>Load later entries</button>
                         </div>
@@ -976,9 +936,7 @@
                 return (
                     <div>
                         <Recording recording={this.recordingMap[this.state.recordingID]} />
-                        <Logs recording={this.recordingMap[this.state.recordingID]}
-                              start={this.recordingMap[this.state.recordingID].start}
-                              end={this.recordingMap[this.state.recordingID].end} />
+                        <Logs recording={this.recordingMap[this.state.recordingID]} />
                     </div>
             );
             }
