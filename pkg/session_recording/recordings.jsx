@@ -385,11 +385,12 @@
                     since: formatDateTime(this.state.start),
                     until: formatDateTime(this.state.end),
                     follow: false,
-                    count: "all",
+                    count: 10,
                 };
 
                 if (this.load_earlier === true) {
                     options["until"] = formatDateTime(this.earlier_than);
+                    options["count"] = "all";
                 } else if (this.state.after != null) {
                     options["after"] = this.state.after;
                     delete options.since;
