@@ -340,8 +340,7 @@
             if (this.load_earlier === true) {
                 entryList.push(...this.entries);
                 this.entries = entryList;
-                const after = this.entries[this.entries.length-1].__CURSOR;
-                this.setState({entries: this.entries, after: after});
+                this.setState({entries: this.entries });
                 this.load_earlier = false;
             } else {
                 if (entryList.length > 0) {
