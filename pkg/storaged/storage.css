@@ -662,3 +662,21 @@ span.radio input[type=radio] {
 span.radio label {
     margin-right: 1em;
 }
+
+.key-slot-panel-n-out-of-m {
+    margin-right: 1em;
+}
+
+.key-slot-panel td:first-child {
+    width: 1em
+}
+
+.sigkey-hash {
+    font-family: monospace;
+    font-size: 200%;
+}
+
+pre.inline-pre {
+    display: inline;
+    padding: 4px;
+}
