@@ -300,11 +300,15 @@
             super(props);
             this.journalctlError = this.journalctlError.bind(this);
             this.journalctlIngest = this.journalctlIngest.bind(this);
+            this.journalctlPrepend = this.journalctlPrepend.bind(this);
             this.getLogs = this.getLogs.bind(this);
+            // this.getEarlierLogs = this.getEarlierLogs.bind(this);
             this.loadLater = this.loadLater.bind(this);
             this.loadEarlier = this.loadEarlier.bind(this);
             this.journalCtl = null;
             this.entries = [];
+            this.earlier_than = null;
+            this.load_earlier = false;
             this.state = {
                 cursor: null,
                 after: null,
@@ -333,11 +337,25 @@
 
             // console.log(entryList);
             // entryList[entryList.length-1]
-            this.entries.push(...entryList);
+            if (this.load_earlier === true) {
+                entryList.push(...this.entries);
+                this.entries = entryList;
+                const after = this.entries[this.entries.length-1].__CURSOR;
+                this.setState({entries: this.entries, after: after});
+                this.load_earlier = false;
+            } else {
+                if (entryList.length > 0) {
+                    this.entries.push(...entryList);
+                    const after = this.entries[this.entries.length-1].__CURSOR;
+                    console.log(after);
+                    this.setState({entries: this.entries, after: after});
+                }
+            }
+
             // console.log(this.entries);
 
             // this.entries = [];
-
+/*
             // this.entries = entryList;
             if (entryList.length > 0) {
                 const after = this.entries[this.entries.length-1].__CURSOR;
@@ -346,6 +364,13 @@
                 // this.cursor_past = entryList[0].__CURSOR;
                 // this.cursor = entryList[entryList.length-1].__CURSOR;
             }
+*/
+
+        }
+
+        journalctlPrepend(entryList) {
+            entryList.push(...this.entries);
+            this.setState({entries: this.entries});
         }
 
         getLogs() {
@@ -358,15 +383,15 @@
                 let matches = [];
 
                 let options = {
-                    // since: formatDateTime(this.props.recording.start),
-                    // until: formatDateTime(this.props.recording.end),
                     since: formatDateTime(this.state.start),
                     until: formatDateTime(this.state.end),
                     follow: false,
                     count: "all",
                 };
 
-                if (this.state.after != null) {
+                if (this.load_earlier === true) {
+                    options["until"] = formatDateTime(this.earlier_than);
+                } else if (this.state.after != null) {
                     options["after"] = this.state.after;
                     delete options.since;
                 }
@@ -382,12 +407,40 @@
                 });
             }
         }
+/*
+        getEarlierLogs() {
+            if (this.state.start != null && this.state.end != null) {
+                if (this.journalCtl != null) {
+                    this.journalCtl.stop();
+                    this.journalCtl = null;
+                }
 
+                let matches = [];
+
+                let options = {
+                    since: formatDateTime(this.state.start),
+                    until: formatDateTime(this.earlier_than),
+                    follow: false,
+                    count: "all",
+                };
+
+                console.log(options);
+
+                const self = this;
+                this.journalCtl = Journal.journalctl(matches, options).
+                fail(this.journalctlError).
+                done( function(data) {
+                    console.log(data);
+                    self.journalctlPrepend(data);
+                });
+            }
+        }
+*/
         loadEarlier() {
+            this.load_earlier = true;
             const start = this.state.start - 36000;
             this.setState({start: start});
-            this.getLogs();
-            console.log(formatDateTime(this.state.start));
+            // this.getEarlierLogs();
         }
 
         loadLater() {
@@ -397,7 +450,7 @@
             console.log(formatDateTime(this.state.end))
             this.setState({end: end});
             console.log(formatDateTime(this.state.end));
-            this.getLogs();
+            // this.getLogs();
         }
 
         // shouldComponentUpdate(nextProps, nextState) {
@@ -406,10 +459,12 @@
 
         componentDidUpdate() {
             if (this.props.recording) {
-                if (this.state.start === null && this.state.end ===null) {
+                if (this.state.start === null && this.state.end === null) {
                     this.setState({start: this.props.recording.start, end: this.props.recording.end});
+                    this.earlier_than = this.props.recording.start;
                 }
                 this.getLogs();
+                console.log('get logs called from did update');
             }
         }
 
@@ -419,7 +474,7 @@
                     <div>
                         <h1>Logs</h1>
                         <div>
-                            <button className="btn btn-default" onClick={this.loadEarlier} disabled="disabled">Load earlier entries</button>
+                            <button className="btn btn-default" onClick={this.loadEarlier}>Load earlier entries</button>
                         </div>
                         <LogsView entries={this.state.entries} start={this.state.start} end={this.state.end} />
                         <div>
