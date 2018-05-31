@@ -332,6 +332,7 @@
             // this.cursor_past = entries[0].__CURSOR;
 
             // console.log(entryList);
+            // entryList[entryList.length-1]
             this.entries.push(...entryList);
             // console.log(this.entries);
 
@@ -340,6 +341,7 @@
             // this.entries = entryList;
             if (entryList.length > 0) {
                 const after = this.entries[this.entries.length-1].__CURSOR;
+                console.log(after);
                 this.setState({entries: this.entries, after: after});
                 // this.cursor_past = entryList[0].__CURSOR;
                 // this.cursor = entryList[entryList.length-1].__CURSOR;
@@ -356,12 +358,20 @@
                 let matches = [];
 
                 let options = {
-                    cursor: this.cursor,
-                    since: formatDateTime(this.props.recording.start),
-                    until: formatDateTime(this.props.recording.end),
+                    // since: formatDateTime(this.props.recording.start),
+                    // until: formatDateTime(this.props.recording.end),
+                    since: formatDateTime(this.state.start),
+                    until: formatDateTime(this.state.end),
                     follow: false,
                     count: "all",
                 };
+
+                if (this.state.after != null) {
+                    options["after"] = this.state.after;
+                    delete options.since;
+                }
+
+                console.log(options);
 
                 const self = this;
                 this.journalCtl = Journal.journalctl(matches, options).
@@ -387,7 +397,12 @@
             console.log(formatDateTime(this.state.end))
             this.setState({end: end});
             console.log(formatDateTime(this.state.end));
+            this.getLogs();
         }
+
+        // shouldComponentUpdate(nextProps, nextState) {
+        //
+        // }
 
         componentDidUpdate() {
             if (this.props.recording) {
