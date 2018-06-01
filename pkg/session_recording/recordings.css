@@ -357,3 +357,7 @@ table.listing-ct > thead th:last-child, tr.listing-ct-item td:last-child {
 .player-wrap .panel-body, .player-wrap .console-ct > .terminal {
     padding: 0;
 }
+
+.highlighted {
+    background-color: #ededed !important;
+}

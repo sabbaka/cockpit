@@ -28,8 +28,6 @@
     let React = require("react");
     let Listing = require("cockpit-components-listing.jsx");
     let Player = require("./player.jsx");
-    let underscore = require("underscore");
-    console.log(underscore);
 
     require("bootstrap-datetime-picker/js/bootstrap-datetimepicker.js");
     require("bootstrap-datetime-picker/css/bootstrap-datetimepicker.css");
@@ -267,8 +265,15 @@
 
     function LogElement(props) {
         const entry = props.entry;
+        const start = props.start;
+        const end = props.end;
+        const entry_timestamp = entry.__REALTIME_TIMESTAMP / 1000;
+        let className = 'cockpit-logline';
+        if (start < entry_timestamp && end > entry_timestamp) {
+            className = 'cockpit-logline highlighted';
+        }
         return (
-            <div className="cockpit-logline" data-cursor={entry.__CURSOR}>
+            <div className={className} data-cursor={entry.__CURSOR}>
                 <div className="cockpit-log-warning">
                     <i className="fa fa-exclamation-triangle"></i>
                 </div>
@@ -280,13 +285,12 @@
     }
 
     function LogsView(props) {
-        // console.log(props);
         const entries = props.entries;
-        // console.log(entries);
+        const start = props.start;
+        const end = props.end;
         const rows = entries.map((entry) =>
-            <LogElement entry={entry} />
+            <LogElement entry={entry} start={start} end={end} />
         );
-        // console.log(rows);
         return (
             <div className="panel panel-default cockpit-log-panel">
                 <div className="panel-heading"></div>
@@ -302,7 +306,6 @@
             this.journalctlIngest = this.journalctlIngest.bind(this);
             this.journalctlPrepend = this.journalctlPrepend.bind(this);
             this.getLogs = this.getLogs.bind(this);
-            // this.getEarlierLogs = this.getEarlierLogs.bind(this);
             this.loadLater = this.loadLater.bind(this);
             this.loadEarlier = this.loadEarlier.bind(this);
             this.journalCtl = null;
@@ -327,16 +330,6 @@
         }
 
         journalctlIngest(entryList) {
-            // let entries = [];
-            // for (let entry in entryList) {
-            //     entries.push(entryList[entry]);
-            // }
-            // this.entries = entries;
-            // this.setState({entries:entries});
-            // this.cursor_past = entries[0].__CURSOR;
-
-            // console.log(entryList);
-            // entryList[entryList.length-1]
             if (this.load_earlier === true) {
                 entryList.push(...this.entries);
                 this.entries = entryList;
@@ -346,25 +339,9 @@
                 if (entryList.length > 0) {
                     this.entries.push(...entryList);
                     const after = this.entries[this.entries.length-1].__CURSOR;
-                    console.log(after);
                     this.setState({entries: this.entries, after: after});
                 }
             }
-
-            // console.log(this.entries);
-
-            // this.entries = [];
-/*
-            // this.entries = entryList;
-            if (entryList.length > 0) {
-                const after = this.entries[this.entries.length-1].__CURSOR;
-                console.log(after);
-                this.setState({entries: this.entries, after: after});
-                // this.cursor_past = entryList[0].__CURSOR;
-                // this.cursor = entryList[entryList.length-1].__CURSOR;
-            }
-*/
-
         }
 
         journalctlPrepend(entryList) {
@@ -396,66 +373,25 @@
                     delete options.since;
                 }
 
-                console.log(options);
-
                 const self = this;
                 this.journalCtl = Journal.journalctl(matches, options).
                 fail(this.journalctlError).
                 done( function(data) {
-                    console.log(data);
                     self.journalctlIngest(data);
                 });
             }
         }
-/*
-        getEarlierLogs() {
-            if (this.state.start != null && this.state.end != null) {
-                if (this.journalCtl != null) {
-                    this.journalCtl.stop();
-                    this.journalCtl = null;
-                }
 
-                let matches = [];
-
-                let options = {
-                    since: formatDateTime(this.state.start),
-                    until: formatDateTime(this.earlier_than),
-                    follow: false,
-                    count: "all",
-                };
-
-                console.log(options);
-
-                const self = this;
-                this.journalCtl = Journal.journalctl(matches, options).
-                fail(this.journalctlError).
-                done( function(data) {
-                    console.log(data);
-                    self.journalctlPrepend(data);
-                });
-            }
-        }
-*/
         loadEarlier() {
             this.load_earlier = true;
             const start = this.state.start - 36000;
             this.setState({start: start});
-            // this.getEarlierLogs();
         }
 
         loadLater() {
-            console.log(this.state.end);
             const end = this.state.end + 360000;
-            console.log(end);
-            console.log(formatDateTime(this.state.end))
             this.setState({end: end});
-            console.log(formatDateTime(this.state.end));
-            // this.getLogs();
         }
-
-        // shouldComponentUpdate(nextProps, nextState) {
-        //
-        // }
 
         componentDidUpdate() {
             if (this.props.recording) {
@@ -464,7 +400,6 @@
                     this.earlier_than = this.props.recording.start;
                 }
                 this.getLogs();
-                console.log('get logs called from did update');
             }
         }
 
@@ -476,7 +411,8 @@
                         <div>
                             <button className="btn btn-default" onClick={this.loadEarlier}>Load earlier entries</button>
                         </div>
-                        <LogsView entries={this.state.entries} start={this.state.start} end={this.state.end} />
+                        <LogsView entries={this.state.entries} start={this.props.recording.start}
+                                  end={this.props.recording.end} />
                         <div>
                             <button className="btn btn-default" onClick={this.loadLater}>Load later entries</button>
                         </div>
@@ -507,14 +443,7 @@
                 cockpit.location.go('/');
             }
         }
-/*
-        componentDidUpdate() {
-            let r = this.props.recording;
-            if (r) {
-                console.log(r);
-            }
-        }
-*/
+
         render() {
             let r = this.props.recording;
             if (r == null) {
