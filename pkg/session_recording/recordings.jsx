@@ -293,7 +293,6 @@
         );
         return (
             <div className="panel panel-default cockpit-log-panel">
-                <div className="panel-heading"></div>
                 {rows}
             </div>
         );
@@ -406,14 +405,14 @@
         render() {
             if (this.props.recording) {
                 return (
-                    <div>
-                        <h1>Logs</h1>
-                        <div>
-                            <button className="btn btn-default" onClick={this.loadEarlier}>Load earlier entries</button>
+                    <div className="panel panel-default">
+                        <div className="panel-heading">
+                            <span>Logs</span>
+                            <button className="btn btn-default" style={{"float":"right"}} onClick={this.loadEarlier}>Load earlier entries</button>
                         </div>
                         <LogsView entries={this.state.entries} start={this.props.recording.start}
                                   end={this.props.recording.end} />
-                        <div>
+                        <div className="panel-heading">
                             <button className="btn btn-default" onClick={this.loadLater}>Load later entries</button>
                         </div>
                     </div>
@@ -935,7 +934,13 @@
                 return (
                     <div>
                         <Recording recording={this.recordingMap[this.state.recordingID]} />
-                        <Logs recording={this.recordingMap[this.state.recordingID]} />
+                        <div className="container-fluid">
+                            <div className="row">
+                                <div className="col-md-12">
+                                    <Logs recording={this.recordingMap[this.state.recordingID]} />
+                                </div>
+                            </div>
+                        </div>
                     </div>
             );
             }
