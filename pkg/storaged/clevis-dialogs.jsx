@@ -309,7 +309,7 @@ function remove_clevis_dialog(client, block, key) {
 export class ClevisSlots extends React.Component {
     constructor() {
         super();
-        this.state = { slots: null };
+        this.state = { slots: null, slot_error: null };
     }
 
     monitor_slots(block) {
@@ -321,7 +321,7 @@ export class ClevisSlots extends React.Component {
             if (block) {
                 var dev = decode_filename(block.Device);
                 this.monitor_channel = python.spawn(luksmeta_monitor_hack_py, [ dev ],
-                                                    { superuser: "try" });
+                                                    { superuser: true });
                 var buf = "";
                 this.monitor_channel.stream(output => {
                     var lines;
@@ -332,6 +332,9 @@ export class ClevisSlots extends React.Component {
                         this.setState({ slots: JSON.parse(lines[lines.length - 2]) });
                     }
                 });
+                this.monitor_channel.fail(err => {
+                    this.setState({ slots: [ ], slot_error: err });
+                })
             }
         }
     }
@@ -349,7 +352,7 @@ export class ClevisSlots extends React.Component {
 
         this.monitor_slots(block);
 
-        if (this.state.slots == null)
+        if (this.state.slots == null && this.state.slot_error == null)
             return null;
 
         function decode_clevis_slot(slot) {
@@ -384,7 +387,16 @@ export class ClevisSlots extends React.Component {
 
         var rows;
         if (keys.length == 0) {
-            rows = <tr><td className="text-center">{_("No key slots")}</td></tr>;
+            var text;
+            if (this.state.slot_error) {
+                if (this.state.slot_error.problem == "access-denied")
+                    text = _("The currently logged in user is not permitted to see information about keys.");
+                else
+                    text = this.state.slot_error.toString();
+            } else {
+                text = _("No key slots");
+            }
+            rows = <tr><td className="text-center">{text}</td></tr>;
         } else {
             rows = [ ];
 
