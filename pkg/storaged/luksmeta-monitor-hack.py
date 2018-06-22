@@ -42,8 +42,16 @@ def info(dev):
     slots = [ ]
     if result.returncode != 0:
         return slots
+    in_luks2_slot_section = False
     for line in result.stdout.splitlines():
-        match = re.fullmatch(b"Key Slot ([0-9]+): ENABLED", line)
+        if line == "Keyslots:":
+            in_luks2_slot_section = True
+        elif not line.startswith(b" "):
+            in_luks2_slot_section = False
+        if in_luks2_slot_section:
+            match = re.fullmatch(b"Key Slot ([0-9]+): ENABLED", line)
+        else:
+            match = re.fullmatch(b"  ([0-9]+): luks2", line)
         if match:
             slot = int(match.group(1))
             entry = { "Index": { "v": slot } }
