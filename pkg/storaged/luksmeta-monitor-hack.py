@@ -64,6 +64,7 @@ def info(dev):
     return slots
 
 def monitor(dev):
+    path = subprocess.check_output([ "udevadm", "info", "-q", "path", dev ]).rstrip(b"\n")
     mon = subprocess.Popen([ "stdbuf", "-o", "L", "udevadm", "monitor", "-u", "-s", "block"],
                            bufsize=1, stdout=subprocess.PIPE)
 
@@ -72,7 +73,7 @@ def monitor(dev):
     sys.stdout.flush()
     while True:
         line = mon.stdout.readline()
-        if b"UDEV" in line:
+        if path in line:
             new_infos = info(dev)
             if new_infos != old_infos:
                 sys.stdout.write(json.dumps(new_infos) + "\n")
