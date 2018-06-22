@@ -48,7 +48,7 @@ def info(dev):
             in_luks2_slot_section = True
         elif not line.startswith(b" "):
             in_luks2_slot_section = False
-        if in_luks2_slot_section:
+        if not in_luks2_slot_section:
             match = re.fullmatch(b"Key Slot ([0-9]+): ENABLED", line)
         else:
             match = re.fullmatch(b"  ([0-9]+): luks2", line)
