@@ -38,21 +38,21 @@ def get_clevis_config(jwe):
             return { "pin": pin, pin: { } }
 
 def info(dev):
-    result = subprocess.run([ "luksmeta", "show", "-d", dev ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    result = subprocess.run([ "cryptsetup", "luksDump", dev ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     slots = [ ]
     if result.returncode != 0:
         return slots
     for line in result.stdout.splitlines():
-        fields = re.split(b" +", line)
-        if fields[1] == b"active":
-            if fields[2] == b"cb6e8904-81ff-40da-a84a-07ab9ab5715e":
-                jwe = subprocess.check_output([ "luksmeta", "load", "-d", dev, "-s", fields[0] ]).decode("utf-8")
-                config = get_clevis_config(jwe)
-                if config:
-                    slots.append({ "Index": { "v": int(fields[0]) },
-                                   "ClevisConfig": { "v": json.dumps(config) } })
-            else:
-                slots.append({ "Index": { "v": int(fields[0]) } })
+        match = re.fullmatch(b"Key Slot ([0-9]+): ENABLED", line)
+        if match:
+            slot = int(match.group(1))
+            entry = { "Index": { "v": slot } }
+            luksmeta = subprocess.run([ "luksmeta", "load", "-d", dev, "-s", str(slot),
+                                        "-u", "cb6e8904-81ff-40da-a84a-07ab9ab5715e" ],
+                                      stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            if (luksmeta.returncode == 0):
+                entry["ClevisConfig"] = { "v": json.dumps(get_clevis_config(luksmeta.stdout.decode("utf-8"))) }
+            slots.append(entry)
     return slots
 
 def monitor(dev):
