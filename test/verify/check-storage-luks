@@ -173,12 +173,6 @@ class TestStorage(StorageCase):
         self.content_row_wait_in_col(1, 1, "Encrypted data")
         self.content_row_wait_in_col(2, 1, "ext4 File System")
 
-        # Set the flag and reload the page to make the Clevis stuff appear
-        #
-        b.eval_js('window.localStorage["clevis-feature"] = "on"')
-        b.reload()
-        b.enter_page("/storage")
-
         # Lock the disk
         #
         self.content_head_action(1, "Lock")

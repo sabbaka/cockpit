@@ -411,9 +411,6 @@
         }
 
         function enable_clevis_features() {
-            if (window.localStorage["clevis-feature"] != "on")
-                return cockpit.resolve();
-
             return cockpit.spawn([ "which", "clevis" ], { err: "ignore" }).then(
                 function () {
                     client.features.clevis = true;
