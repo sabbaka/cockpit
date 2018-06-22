@@ -40,7 +40,7 @@
             }
         }
 
-        handleInputChange(e){
+        handleInputChange(e) {
             const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
             const name = e.target.name;
             const config = this.state.config;
@@ -52,7 +52,7 @@
         prepareConfig() {
             this.state.config.latency = parseInt(this.state.config.latency);
             if (this.state.config.input === true) {
-                //log.input
+                // log.input
             }
         }
 
@@ -60,12 +60,13 @@
             this.setState({submitting:"block"});
             console.log(event);
             this.prepareConfig();
-            this.file.replace(this.state.config).done( () => {
+            this.file.replace(this.state.config).done(() => {
                 console.log('updated');
                 this.setState({submitting:"none"});
-            }).fail( (error) => {
-                console.log(error);
-            });
+            })
+                    .fail((error) => {
+                        console.log(error);
+                    });
             event.preventDefault();
         }
 
@@ -110,11 +111,11 @@
 
             promise.done((data) => {
                 if (data === null) {
-                    this.fileReadFailed
+                    this.fileReadFailed();
                     return;
                 }
                 this.setConfig(data);
-            }).fail( (data) => {
+            }).fail((data) => {
                 this.fileReadFailed(data);
             });
         }
@@ -123,149 +124,148 @@
             if (this.state.config != null && this.state.file_error === null) {
                 return (
                     <form onSubmit={this.handleSubmit}>
-                    <table className="form-table-ct col-sm-3">
-                        <tbody>
-                            <tr>
-                                <td className="top"><label htmlFor="shell" className="control-label">Shell</label></td>
-                                <td>
-                                    <input type="text" id="shell" name="shell" value={this.state.config.shell}
+                        <table className="form-table-ct col-sm-3">
+                            <tbody>
+                                <tr>
+                                    <td className="top"><label htmlFor="shell" className="control-label">Shell</label></td>
+                                    <td>
+                                        <input type="text" id="shell" name="shell" value={this.state.config.shell}
                                            className="form-control" onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="notice" className="control-label">Notice</label></td>
-                                <td>
-                                    <input type="text" id="notice" name="notice" value={this.state.config.notice}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="notice" className="control-label">Notice</label></td>
+                                    <td>
+                                        <input type="text" id="notice" name="notice" value={this.state.config.notice}
                                            className="form-control" onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="latency" className="control-label">Latency</label></td>
-                                <td>
-                                    <input type="text" id="latency" name="latency" value={this.state.config.latency}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="latency" className="control-label">Latency</label></td>
+                                    <td>
+                                        <input type="text" id="latency" name="latency" value={this.state.config.latency}
                                            className="form-control" onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="latency" className="control-label">Payload Size, bytes</label></td>
-                                <td>
-                                    <input type="text" id="payload" name="payload" value={this.state.config.payload}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="latency" className="control-label">Payload Size, bytes</label></td>
+                                    <td>
+                                        <input type="text" id="payload" name="payload" value={this.state.config.payload}
                                            className="form-control" onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="input" className="control-label">Log User's Input</label></td>
-                                <td>
-                                    <input type="checkbox" id="input" name="input" defaultChecked={this.state.config.log.input}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="input" className="control-label">Log User's Input</label></td>
+                                    <td>
+                                        <input type="checkbox" id="input" name="input" defaultChecked={this.state.config.log.input}
                                            onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="output" className="control-label">Log User's Output</label></td>
-                                <td>
-                                    <input type="checkbox" id="output" name="output" defaultChecked={this.state.config.log.output}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="output" className="control-label">Log User's Output</label></td>
+                                    <td>
+                                        <input type="checkbox" id="output" name="output" defaultChecked={this.state.config.log.output}
                                            onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="window" className="control-label">Log Window Resize</label></td>
-                                <td>
-                                    <input type="checkbox" id="window" name="window" defaultChecked={this.state.config.log.window}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="window" className="control-label">Log Window Resize</label></td>
+                                    <td>
+                                        <input type="checkbox" id="window" name="window" defaultChecked={this.state.config.log.window}
                                            onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
 
-                            <tr>
-                                <td className="top"><label htmlFor="rate" className="control-label">Limit Rate, bytes/sec</label></td>
-                                <td>
-                                    <input type="text" id="rate" name="rate" value={this.state.config.limit.rate}
+                                <tr>
+                                    <td className="top"><label htmlFor="rate" className="control-label">Limit Rate, bytes/sec</label></td>
+                                    <td>
+                                        <input type="text" id="rate" name="rate" value={this.state.config.limit.rate}
                                            className="form-control" onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="burst" className="control-label">Burst, bytes</label></td>
-                                <td>
-                                    <input type="text" id="burst" name="burst" value={this.state.config.limit.burst}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="burst" className="control-label">Burst, bytes</label></td>
+                                    <td>
+                                        <input type="text" id="burst" name="burst" value={this.state.config.limit.burst}
                                            className="form-control" onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="action" className="control-label">Logging Limit Action</label></td>
-                                <td>
-                                    <select name="action" id="action" onChange={this.handleInputChange} value={this.state.config.limit.action}>
-                                        <option value=""></option>
-                                        <option value="pass">Pass</option>
-                                        <option value="delay">Delay</option>
-                                        <option value="drop">Drop</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="path" className="control-label">File Path</label></td>
-                                <td>
-                                    <input type="text" id="path" name="path" defaultChecked={this.state.config.file.path}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="action" className="control-label">Logging Limit Action</label></td>
+                                    <td>
+                                        <select name="action" id="action" onChange={this.handleInputChange} value={this.state.config.limit.action}>
+                                            <option value="" />
+                                            <option value="pass">Pass</option>
+                                            <option value="delay">Delay</option>
+                                            <option value="drop">Drop</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="path" className="control-label">File Path</label></td>
+                                    <td>
+                                        <input type="text" id="path" name="path" defaultChecked={this.state.config.file.path}
                                            className="form-control" onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="facility" className="control-label">Syslog Facility</label></td>
-                                <td>
-                                    <input type="text" id="facility" name="facility" value={this.state.config.syslog.facility}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="facility" className="control-label">Syslog Facility</label></td>
+                                    <td>
+                                        <input type="text" id="facility" name="facility" value={this.state.config.syslog.facility}
                                            className="form-control" onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="syslog_priority" className="control-label">Syslog Priority</label></td>
-                                <td>
-                                    <input type="text" id="syslog_priority" name="syslog_priority" value={this.state.config.syslog.priority}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="syslog_priority" className="control-label">Syslog Priority</label></td>
+                                    <td>
+                                        <input type="text" id="syslog_priority" name="syslog_priority" value={this.state.config.syslog.priority}
                                            className="form-control" onChange={this.handleInputChange} />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="path" className="control-label">Journal Priority</label></td>
-                                <td>
-                                    <select name="journal_priority" id="journal_priority" onChange={this.handleInputChange} value={this.state.config.journal.priority}>
-                                        <option value=""></option>
-                                        <option value="info">Info</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="path" className="control-label">Journal Augment</label></td>
-                                <td>
-                                    <input type="checkbox" id="augment" name="augment" defaultChecked={this.state.config.journal.augment}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="path" className="control-label">Journal Priority</label></td>
+                                    <td>
+                                        <select name="journal_priority" id="journal_priority" onChange={this.handleInputChange} value={this.state.config.journal.priority}>
+                                            <option value="" />
+                                            <option value="info">Info</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="path" className="control-label">Journal Augment</label></td>
+                                    <td>
+                                        <input type="checkbox" id="augment" name="augment" defaultChecked={this.state.config.journal.augment}
                                            onChange={this.handleInputChange} />
-                                </td>
+                                    </td>
 
-                            </tr>
-                            <tr>
-                                <td className="top"><label htmlFor="path" className="control-label">Writer</label></td>
-                                <td>
-                                    <select name="writer" id="writer" onChange={this.handleInputChange} value={this.state.config.writer}>
-                                        <option value=""></option>
-                                        <option value="journal">Journal</option>
-                                        <option value="syslog">Syslog</option>
-                                        <option value="file">File</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="top">
-                                </td>
-                                    <div className="spinner spinner-sm" style={{display: this.state.submitting}}></div>
-                                <td>
-                                    <button className="btn btn-default" type="submit">Save</button>
+                                </tr>
+                                <tr>
+                                    <td className="top"><label htmlFor="path" className="control-label">Writer</label></td>
+                                    <td>
+                                        <select name="writer" id="writer" onChange={this.handleInputChange} value={this.state.config.writer}>
+                                            <option value="" />
+                                            <option value="journal">Journal</option>
+                                            <option value="syslog">Syslog</option>
+                                            <option value="file">File</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="top" />
+                                    <div className="spinner spinner-sm" style={{display: this.state.submitting}} />
+                                    <td>
+                                        <button className="btn btn-default" type="submit">Save</button>
 
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </form>
                 );
             } else {
                 return (
                     <div className="alert alert-danger">
-                        <span className="pficon pficon-error-circle-o"></span>
+                        <span className="pficon pficon-error-circle-o" />
                         <p><strong>There is no configuration file of tlog present in your system.</strong></p>
                         <p>Please, check the /etc/tlog/tlog-rec-session.conf or if tlog is installed.</p>
                         <p><strong>{this.state.file_error}</strong></p>

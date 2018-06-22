@@ -77,12 +77,14 @@
             let term = this.refs.terminal;
             let onWindowResize = this.onWindowResize;
 
-            $( function() { $(term).resizable({
-                direction: ['right', 'bottom'],
-                stop: function() {
-                    onWindowResize();
-                },
-            }); });
+            $(function() {
+                $(term).resizable({
+                    direction: ['right', 'bottom'],
+                    stop: function() {
+                        onWindowResize();
+                    },
+                });
+            });
 
             if (!this.props.rows) {
                 window.addEventListener('resize', this.onWindowResize);
@@ -178,7 +180,6 @@
                     cols: Math.floor((node.parentElement.clientWidth - padding) / width)
                 });
             }
-            return;
         },
 
         send: function(value) {
