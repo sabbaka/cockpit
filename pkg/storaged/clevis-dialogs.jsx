@@ -222,7 +222,7 @@ function edit_clevis_dialog(client, block, key) {
                       action: function (vals) {
                           return get_existing_passphrase(block, vals).then(passphrase => {
                               return get_tang_adv(vals.tang_url).then(adv => {
-                                  edit_tang_adv(client, block, null, vals.tang_url, adv, passphrase);
+                                  edit_tang_adv(client, block, key, vals.tang_url, adv, passphrase);
                               });
                           });
                       }
