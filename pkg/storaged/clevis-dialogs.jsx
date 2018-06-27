@@ -131,6 +131,12 @@ function slot_remove(block, slot) {
                          { superuser: true, err: "message", pty: true });
 }
 
+function slot_remove_by_passphrase(block, passphrase) {
+    var dev = decode_filename(block.Device);
+    return cockpit.spawn([ "cryptsetup", "luksRemoveKey", dev ],
+                         { superuser: true, err: "message" }).input(passphrase);
+}
+
 /* Dialogs
  */
 
@@ -252,6 +258,8 @@ function verify_tang_adv(url, adv, title, extra, action_title, action) {
     var port = (port_pos >= 0) ? url.substr(port_pos + 1) : "";
     var cmd = cockpit.format("ssh $0 tang-show-keys $1", host, port);
 
+    var cmd_alt = cockpit.format("ssh $0:$1 curl -s \"localhost:88/adv\" | jose fmt -j- -g payload -y -o- | jose jwk use -i- -r -u verify -o- | jose jwk thp -i-", host, port);
+
     var sigkey_thps = compute_sigkey_thps(tang_adv_payload(adv));
 
     dialog_open({ Title: title,
@@ -261,6 +269,10 @@ function verify_tang_adv(url, adv, title, extra, action_title, action) {
                           <p>
                               <span>{_("Manually verify the key on the server: ")}</span>
                               <pre>{cmd}</pre>
+                          </p>
+                          <p>
+                              <span>{_("Alternative way: ")}</span>
+                              <pre>{cmd_alt}</pre>
                           </p>
                           <p>
                               <span>{_("The output should match this text: ")}</span>
@@ -283,6 +295,24 @@ function remove_passphrase_dialog(block, key) {
                       Title: _("Remove passphrase"),
                       action: function () {
                           return slot_remove(block, key.slot);
+                      }
+                  }
+    });
+}
+
+function remove_by_passphrase_dialog(block) {
+    dialog_open({ Title: _("Remove a slot by passphrase"),
+                  Fields: [
+                      PassInput("existing_passphrase", _("Existing passphrase"),
+                                { validate: val => !val.length && _("Passphrase cannot be empty")
+                                })
+                  ],
+                  Body: <p>{_("Removing a slot by passphrase might prevent future unlocking of the volume and might thus cause data loss.")}</p>,
+                  Action: {
+                      DangerButton: true,
+                      Title: _("Remove a slot by passphrase"),
+                      action: function (vals) {
+                          return slot_remove_by_passphrase(block, vals.existing_passphrase);
                       }
                   }
     });
@@ -421,7 +451,7 @@ export class ClevisSlots extends React.Component {
             var passphrase_count = 0;
             keys.sort((a, b) => a.slot - b.slot).forEach(key => {
                 if (key.type == "luks-passphrase") {
-                    add_row(cockpit.format(_("Passphrase $0"), ++passphrase_count),
+                    add_row(cockpit.format(_("Passphrase $0"), ++passphrase_count, (keys.length === 8)),
                             () => edit_passphrase_dialog(block, key), null,
                             () => remove_passphrase_dialog(block, key));
                 } else {
@@ -437,8 +467,12 @@ export class ClevisSlots extends React.Component {
             <div className="panel panel-default">
                 <div className="panel-heading">
                     <div className="pull-right">
-                        <StorageButton onClick={() => add_dialog(client, block)}>
+                        <span>{rows.length} {_("of 8 slots")} </span>
+                        <StorageButton onClick={() => add_dialog(client, block)} excuse={keys.length === 8}>
                             <span className="fa fa-plus" />
+                        </StorageButton>
+                        <StorageButton onClick={() => remove_by_passphrase_dialog(block)}>
+                            <span className="fa fa-times" />
                         </StorageButton>
                     </div>
                     {_("Key slots")}
