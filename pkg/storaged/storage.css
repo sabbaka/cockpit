@@ -649,3 +649,11 @@ td.storage-action {
     line-height: 1.6666;
     color: rgb(54, 54, 54);
 }
+
+span.radio input[type=radio] {
+    margin-top: 5px;
+}
+
+span.radio label {
+    margin-right: 1em;
+}
