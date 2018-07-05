@@ -152,8 +152,10 @@ const Validated = ({ errors, error_key, children }) => {
     );
 }
 
-const Row = ({ tag, title, errors, children }) => {
+const Row = ({ tag, title, errors, options, children }) => {
     if (tag) {
+        if (options.widest_title)
+            title = [ <div className="widest-title">{options.widest_title}</div>, <div>{title}</div> ];
         return (
             <tr>
                 <td className="top">{title}</td>
@@ -183,7 +185,7 @@ const Body = ({body, fields, values, errors, onChange}) => {
                         { fields.map(f => {
                             if (is_visible(f, values))
                                 return (
-                                    <Row key={f.tag} tag={f.tag} title={f.title} errors={errors}>
+                                    <Row key={f.tag} tag={f.tag} title={f.title} errors={errors} options={f.options}>
                                         { f.render(values[f.tag], val => { values[f.tag] = val; onChange(); }) }
                                     </Row>
                                 );
