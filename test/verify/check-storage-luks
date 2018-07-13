@@ -24,6 +24,7 @@ from storagelib import *
 
 class TestStorage(StorageCase):
     def testLuks(self):
+        self.allow_journal_messages("Device is not initialized.*")
         m = self.machine
         b = self.browser
 
@@ -153,6 +154,8 @@ class TestStorage(StorageCase):
         #
         #        https://github.com/latchset/tang/issues/23
 
+        m.execute("systemctl restart tangd.socket")
+
         m.execute("systemctl reset-failed tangd-update; systemctl restart tangd-update")
 
         m.execute("systemctl start tangd.socket")
@@ -169,7 +172,7 @@ class TestStorage(StorageCase):
         self.dialog({ "type": "luks+ext4",
                       "name": "ENCRYPTED",
                       "passphrase": "vainu-reku-toma-rolle-kaja",
-                      "passphrase2": "vainu-reku-toma-rolle-kaja" })
+                          "passphrase2": "vainu-reku-toma-rolle-kaja" })
         self.content_row_wait_in_col(1, 1, "Encrypted data")
         self.content_row_wait_in_col(2, 1, "ext4 File System")
 
@@ -195,6 +198,7 @@ class TestStorage(StorageCase):
         b.wait_in_text("#dialog", m.execute("jose jwk thp -i /var/db/tang/sig1.jwk").strip())
         self.dialog_apply()
         self.dialog_wait_close()
+        b.wait_present(panel)
         b.wait_in_text(panel + ".table tr:nth-child(2)", "127.0.0.1")
 
         if can_unlock:
@@ -221,6 +225,167 @@ class TestStorage(StorageCase):
         b.click(panel + ".table tr:nth-child(2) .fa-minus")
         self.confirm()
         b.wait_not_present(panel + ".table tr:nth-child(2)")
+
+    def testSlots(self):
+        self.allow_journal_messages("Device is not initialized.*")
+        m = self.machine
+        b = self.browser
+
+        self.login_and_go("/storage")
+
+        m.add_disk("50M", serial="MYDISK")
+        b.wait_in_text("#drives", "MYDISK")
+        b.click('tr:contains("MYDISK")')
+        b.wait_visible("#storage-detail")
+        # create volume and passphrase
+        self.content_tab_action(1, 1, "Format")
+        self.dialog({ "type": "luks+ext4",
+                      "name": "ENCRYPTED",
+                      "passphrase": "vainu-reku-toma-rolle-kaja",
+                      "passphrase2": "vainu-reku-toma-rolle-kaja" })
+        self.content_row_wait_in_col(1, 1, "Encrypted data")
+        self.content_row_wait_in_col(2, 1, "ext4 File System")
+        self.content_tab_wait_in_info(1, 1, "Options", "(none)")
+        # add one more passphrase
+        tab = self.content_tab_expand(1, 1)
+        panel = tab + " .panel:contains(Key slots) "
+        b.click(panel + ".fa-plus")
+        self.dialog_wait_open()
+        b.click(".modal-body button.dropdown-toggle")
+        b.click("ul.dropdown-menu li a:contains(Passphrase)")
+        self.dialog_set_val("new_passphrase", "vainu-reku-toma-rolle-kaja-1")
+        self.dialog_set_val("new_passphrase2", "vainu-reku-toma-rolle-kaja-1")
+        self.dialog_set_val("passphrase", "vainu-reku-toma-rolle-kaja")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # unlock with first passphrase
+        self.content_head_action(1, "Lock")
+        b.wait_not_in_text("#detail-content", "ext4 File System")
+        self.content_head_action(1, "Unlock")
+        self.dialog({ "passphrase": "vainu-reku-toma-rolle-kaja" })
+        self.content_row_wait_in_col(2, 1, "ext4 File System")
+        # unlock with second passphrase
+        self.content_head_action(1, "Lock")
+        b.wait_not_in_text("#detail-content", "ext4 File System")
+        self.content_head_action(1, "Unlock")
+        self.dialog({ "passphrase": "vainu-reku-toma-rolle-kaja-1" })
+        self.content_row_wait_in_col(2, 1, "ext4 File System")
+        # delete second key slot by providing passphrase
+        b.click(panel + ".fa-times")
+        self.dialog_wait_open()
+        self.dialog_set_val("existing_passphrase", "vainu-reku-toma-rolle-kaja-1")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # check that it is not possible to unlock with deleted passphrase
+        self.content_head_action(1, "Lock")
+        b.wait_not_in_text("#detail-content", "ext4 File System")
+        self.content_head_action(1, "Unlock")
+        self.dialog_wait_open()
+        self.dialog_set_val("passphrase", "vainu-reku-toma-rolle-kaja-1")
+        self.dialog_apply()
+        b.wait_present(".dialog-error")
+        b.wait_in_text(".dialog-error", "Error unlocking /dev/sda: Failed to activate device: Operation not permitted")
+        self.dialog_cancel()
+        # add more passphrases, seven exactly, to reach the limit of eight
+        # 1
+        b.click(panel + ".fa-plus")
+        self.dialog_wait_open()
+        b.click(".modal-body button.dropdown-toggle")
+        b.click("ul.dropdown-menu li a:contains(Passphrase)")
+        self.dialog_set_val("new_passphrase", "vainu-reku-toma-rolle-kaja-1")
+        self.dialog_set_val("new_passphrase2", "vainu-reku-toma-rolle-kaja-1")
+        self.dialog_set_val("passphrase", "vainu-reku-toma-rolle-kaja")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # 2
+        b.click(panel + ".fa-plus")
+        self.dialog_wait_open()
+        b.click(".modal-body button.dropdown-toggle")
+        b.click("ul.dropdown-menu li a:contains(Passphrase)")
+        self.dialog_set_val("new_passphrase", "vainu-reku-toma-rolle-kaja-2")
+        self.dialog_set_val("new_passphrase2", "vainu-reku-toma-rolle-kaja-2")
+        self.dialog_set_val("passphrase", "vainu-reku-toma-rolle-kaja-1")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # 3
+        b.click(panel + ".fa-plus")
+        self.dialog_wait_open()
+        b.click(".modal-body button.dropdown-toggle")
+        b.click("ul.dropdown-menu li a:contains(Passphrase)")
+        self.dialog_set_val("new_passphrase", "vainu-reku-toma-rolle-kaja-3")
+        self.dialog_set_val("new_passphrase2", "vainu-reku-toma-rolle-kaja-3")
+        self.dialog_set_val("passphrase", "vainu-reku-toma-rolle-kaja-2")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # 4
+        b.click(panel + ".fa-plus")
+        self.dialog_wait_open()
+        b.click(".modal-body button.dropdown-toggle")
+        b.click("ul.dropdown-menu li a:contains(Passphrase)")
+        self.dialog_set_val("new_passphrase", "vainu-reku-toma-rolle-kaja-4")
+        self.dialog_set_val("new_passphrase2", "vainu-reku-toma-rolle-kaja-4")
+        self.dialog_set_val("passphrase", "vainu-reku-toma-rolle-kaja-3")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # 5
+        b.click(panel + ".fa-plus")
+        self.dialog_wait_open()
+        b.click(".modal-body button.dropdown-toggle")
+        b.click("ul.dropdown-menu li a:contains(Passphrase)")
+        self.dialog_set_val("new_passphrase", "vainu-reku-toma-rolle-kaja-5")
+        self.dialog_set_val("new_passphrase2", "vainu-reku-toma-rolle-kaja-5")
+        self.dialog_set_val("passphrase", "vainu-reku-toma-rolle-kaja-4")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # 6
+        b.click(panel + ".fa-plus")
+        self.dialog_wait_open()
+        b.click(".modal-body button.dropdown-toggle")
+        b.click("ul.dropdown-menu li a:contains(Passphrase)")
+        self.dialog_set_val("new_passphrase", "vainu-reku-toma-rolle-kaja-6")
+        self.dialog_set_val("new_passphrase2", "vainu-reku-toma-rolle-kaja-6")
+        self.dialog_set_val("passphrase", "vainu-reku-toma-rolle-kaja-5")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # 7
+        b.click(panel + ".fa-plus")
+        self.dialog_wait_open()
+        b.click(".modal-body button.dropdown-toggle")
+        b.click("ul.dropdown-menu li a:contains(Passphrase)")
+        self.dialog_set_val("new_passphrase", "vainu-reku-toma-rolle-kaja-7")
+        self.dialog_set_val("new_passphrase2", "vainu-reku-toma-rolle-kaja-7")
+        self.dialog_set_val("passphrase", "vainu-reku-toma-rolle-kaja-6")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # check if add button is inactive
+        b.wait_present(panel + ".disabled")
+        # check if edit button is inactive
+        slots_table = tab + " .panel table "
+        b.wait_present(slots_table + ".disabled")
+        # remove one slot
+        slots_table = tab + " .panel table "
+        b.wait_present(slots_table + "tbody tr:last-child .fa-minus")
+        b.click(slots_table + "tbody tr:last-child .fa-minus")
+        self.dialog_wait_open()
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # check if buttons have become enabled after removing last slot
+        b.wait_not_present(slots_table + ".disabled")
+        b.wait_not_present(panel + ".disabled")
+        # change one of the passphrases
+        b.wait_present(slots_table + "tbody tr:last-child .pficon-edit")
+        b.click(slots_table + "tbody tr:last-child .pficon-edit")
+        self.dialog_wait_open()
+        self.dialog_set_val("old_passphrase", "vainu-reku-toma-rolle-kaja-6")
+        self.dialog_set_val("new_passphrase", "vainu-reku-toma-rolle-kaja-8")
+        self.dialog_set_val("new_passphrase2", "vainu-reku-toma-rolle-kaja-8")
+        self.dialog_apply()
+        self.dialog_wait_close()
+        # unlock volume with the newly created passphrase
+        self.content_head_action(1, "Unlock")
+        self.dialog({ "passphrase": "vainu-reku-toma-rolle-kaja-8" })
+        self.content_row_wait_in_col(2, 1, "ext4 File System")
+
 
 if __name__ == '__main__':
     test_main()
