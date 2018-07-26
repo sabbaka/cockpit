@@ -22,253 +22,269 @@ import datetime
 
 import parent
 from testlib import *
-
+#
 class TestAccounts(MachineCase):
-    def testBasic(self):
+#     def testBasic(self):
+#         b = self.browser
+#         m = self.machine
+#
+#         self.login_and_go("/users")
+#
+#         # Add a user externally
+#         m.execute("useradd anton")
+#         m.execute("echo anton:foobar | chpasswd")
+#         b.wait_in_text('#accounts-list', "anton")
+#
+#         # Set a real name
+#         b.go("#/anton")
+#         b.wait_visible("#account")
+#         b.wait_text("#account-user-name", "anton")
+#         b.set_val('#account-real-name', "Anton Arbitrary")
+#         b.wait_not_attr('#account-real-name', 'data-dirty', 'true')
+#         # don't wait for /etc/passwd to be current - this should hold true once the 'data-dirty' was removed
+#         self.assertIn("Anton Arbitrary", m.execute("grep anton /etc/passwd"))
+#
+#         good_password = "tqymuVh.ZfZnP§9Wr=LM3JyG5yx"
+#         # Delete it
+#         b.click('#account-delete')
+#         b.wait_popup('account-confirm-delete-dialog')
+#         b.click('#account-confirm-delete-apply')
+#         b.wait_popdown('account-confirm-delete-dialog')
+#         b.wait_visible("#accounts")
+#         b.wait_not_in_text('#accounts-list', "Anton Arbitrary")
+#
+#         # Check root user
+#         b.go("#/root")
+#         b.wait_present("#account")
+#         b.wait_visible("#account")
+#         b.wait_text("#account-user-name", "root")
+#         # some operations are not allowed for root user
+#         b.wait_present("#account-delete.disabled")
+#         b.wait_present("#account-logout")
+#         b.wait_attr("#account-logout", "disabled", "disabled")
+#         b.wait_present("#account-real-name-wrapper.disabled")
+#         b.wait_present("#account-locked:not(:checked)")
+#         # root account should not be locked by default on our images
+#         self.assertIn(m.execute("passwd -S root").split()[1], ["P", "PS"])
+#         # (un)locking root account introduced in version 161
+#         if m.image != 'rhel-7-5-distropkg':
+#             # now lock account
+#             b.set_checked("#account-locked", True)
+#             b.wait(lambda: m.execute("passwd -S root").split()[1] in ["L", "LK"])
+#
+#         # go back to accounts overview, check breadcrumb
+#         b.click("#account .breadcrumb a")
+#         b.wait_present("#accounts-create")
+#
+#         # Create a user from the UI
+#         b.click('#accounts-create')
+#         b.wait_popup('accounts-create-dialog')
+#         b.set_val('#accounts-create-user-name', "berta")
+#         b.set_val('#accounts-create-real-name', "Berta Bestimmt")
+#         b.set_val('#accounts-create-pw1', good_password)
+#         b.set_val('#accounts-create-pw2', good_password)
+#         b.click('#accounts-create-create')
+#         b.wait_popdown('accounts-create-dialog')
+#         b.wait_in_text('#accounts-list', "Berta Bestimmt")
+#
+#         # Delete it externally
+#         m.execute("userdel berta")
+#         b.wait_not_in_text('#accounts-list', "Berta Bestimmt")
+#
+#         # Create a locked user
+#         b.click('#accounts-create')
+#         b.wait_popup('accounts-create-dialog')
+#         b.set_val('#accounts-create-user-name', "jussi")
+#         b.set_val('#accounts-create-real-name', "Jussi Junior")
+#         b.set_val('#accounts-create-pw1', good_password)
+#         b.set_val('#accounts-create-pw2', good_password)
+#         b.set_checked('#accounts-create-locked', True)
+#         b.click('#accounts-create-create')
+#         b.wait_popdown('accounts-create-dialog')
+#         b.wait_in_text('#accounts-list', "Jussi Junior")
+#
+#         admin_role_sel = 'input[data-name="%s"]' % m.get_admin_group()
+#         b.wait(lambda: "jussi" in m.execute("grep jussi /etc/passwd"))
+#         b.wait(lambda: "jussi" not in m.execute("grep %s /etc/group" % m.get_admin_group()))
+#
+#         # Unlock it and make it an admin
+#         b.go("#/jussi")
+#         b.wait_visible("#account")
+#         b.wait_text("#account-user-name", "jussi")
+#         b.set_checked('#account-locked', False)
+#         b.wait_present(admin_role_sel + ":not(:checked)")
+#         b.set_checked(admin_role_sel, True)
+#         b.wait_present(admin_role_sel + ":checked")
+#         b.wait(lambda: "jussi" in m.execute("grep %s /etc/group" % m.get_admin_group()))
+#         # An alert which shows up once we've changed things
+#         if m.image != 'rhel-7-5-distropkg':
+#             b.wait_present("#account-roles .alert-info")
+#         b.set_checked(admin_role_sel, False)
+#         b.wait_present(admin_role_sel + ":not(:checked)")
+#         b.wait(lambda: "jussi" not in m.execute("grep %s /etc/group" % m.get_admin_group()))
+#         m.execute("/usr/sbin/usermod jussi -G %s -a" % m.get_admin_group())
+#         b.wait_present(admin_role_sel + ":checked")
+#
+#         # Change the password of this account
+#         b.go("#/jussi")
+#         b.wait_visible("#account")
+#         b.wait_text("#account-user-name", "jussi")
+#         b.click('#account-set-password')
+#         b.wait_popup('account-set-password-dialog')
+#
+#         # Something invalid
+#         b.set_val("#account-set-password-pw1", 'a')
+#         b.set_val("#account-set-password-pw2", 'a')
+#         b.click('#account-set-password-apply')
+#         b.wait_present(".check-passwords.has-error")
+#         b.wait_in_text(".check-passwords.has-error .dialog-error.help-block", "Password quality check failed:")
+#
+#         good_password_2 = "cEwghLY§X9R&m8RLwk4Xfed9Bw="
+#         # Now set to something valid
+#         b.set_val("#account-set-password-pw1", good_password_2)
+#         b.set_val("#account-set-password-pw2", good_password_2)
+#         b.click('#account-set-password-apply')
+#         b.wait_popdown('account-set-password-dialog')
+#
+#         # Logout and login with the new password
+#         b.logout()
+#         self.allow_restart_journal_messages()
+#         b.open("/users")
+#         b.wait_visible("#login")
+#         b.set_val("#login-user-input", "jussi")
+#         b.set_val("#login-password-input", good_password_2)
+#         b.click('#login-button')
+#         b.expect_load()
+#         b.wait_present('#content')
+#
+#         self.allow_journal_messages("Password quality check failed:")
+#         self.allow_journal_messages("The password is a palindrome")
+#
+#     def accountExpiryInfo(self, account, field):
+#         for line in self.machine.execute("LC_ALL=C chage -l {0}".format(account)).split("\n"):
+#             if line.startswith(field):
+#                 (name, delim, value) = line.partition(":")
+#                 return value.strip()
+#         return None
+#
+#     def testExpire(self):
+#         m = self.machine
+#         b = self.browser
+#
+#         m.execute("useradd scruffy -s /bin/bash -c 'Scruffy' || true")
+#         m.execute("echo scruffy:foobar | chpasswd")
+#
+#         self.login_and_go("/users")
+#         b.go("#/scruffy")
+#         b.wait_visible("#account")
+#         b.wait_text("#account-user-name", "scruffy")
+#
+#         # Try to expire the account
+#         b.wait_text("#account-expiration-button", "Never lock account")
+#         self.assertEqual(self.accountExpiryInfo("scruffy", "Account expires"), "never")
+#         b.click("#account-expiration-button")
+#         b.wait_popup("account-expiration")
+#         b.click("#account-expiration-expires")
+#
+#         # Try an invalid date
+#         b.set_val("#account-expiration-input", "blah")
+#         b.click("#account-expiration .btn-primary")
+#         b.wait_present("#account-expiration .dialog-error")
+#         b.wait_text("#account-expiration .dialog-error", "Invalid expiration date")
+#
+#         # Now a valid date 30 days in the future
+#         when = datetime.datetime.now() + datetime.timedelta(days=30)
+#         b.set_val("#account-expiration-input", when.isoformat().split("T")[0])
+#         b.click("#account-expiration .btn-primary")
+#         b.wait_popdown("account-expiration")
+#         b.wait_in_text("#account-expiration-button", "Lock account on")
+#         self.assertNotEqual(self.accountExpiryInfo("scruffy", "Account expires"), "never")
+#
+#         # Now try and change it back
+#         b.click("#account-expiration-button")
+#         b.wait_popup("account-expiration")
+#         b.click("#account-expiration-never")
+#         b.click("#account-expiration .btn-primary")
+#         b.wait_popdown("account-expiration")
+#         b.wait_text("#account-expiration-button", "Never lock account")
+#         self.assertEqual(self.accountExpiryInfo("scruffy", "Account expires"), "never")
+#
+#         # Try to expire a password
+#         b.wait_text("#password-expiration-button", "Never expire password")
+#         self.assertEqual(self.accountExpiryInfo("scruffy", "Password expires"), "never")
+#         b.click("#password-expiration-button")
+#         b.wait_popup("password-expiration")
+#         b.click("#password-expiration-expires")
+#
+#         # Try an invalid number
+#         b.set_val("#password-expiration-input", "-3")
+#         b.click("#password-expiration .btn-primary")
+#         b.wait_present("#password-expiration .dialog-error")
+#         b.wait_text("#password-expiration .dialog-error", "Invalid number of days")
+#
+#         # Expire password every 30 days
+#         b.set_val("#password-expiration-input", "30")
+#         b.click("#password-expiration .btn-primary")
+#         b.wait_popdown("password-expiration")
+#         b.wait_in_text("#password-expiration-button", "Require password change on")
+#         self.assertNotEqual(self.accountExpiryInfo("scruffy", "Password expires"), "never")
+#
+#         # Now try and change it back
+#         b.click("#password-expiration-button")
+#         b.wait_popup("password-expiration")
+#         b.click("#password-expiration-never")
+#         b.click("#password-expiration .btn-primary")
+#         b.wait_popdown("password-expiration")
+#         b.wait_text("#password-expiration-button", "Never expire password")
+#         self.assertEqual(self.accountExpiryInfo("scruffy", "Password expires"), "never")
+#
+#         # Now change it to expire again
+#         b.click("#password-expiration-button")
+#         b.wait_popup("password-expiration")
+#         b.click("#password-expiration-expires")
+#         b.set_val("#password-expiration-input", "30")
+#         b.click("#password-expiration .btn-primary")
+#         b.wait_popdown("password-expiration")
+#
+#         b.logout()
+#         self.allow_authorize_journal_messages()
+#         self.login_and_go("/users", user="scruffy")
+#         b.go("#/scruffy")
+#         b.wait_visible("#account")
+#         b.wait_text("#account-user-name", "scruffy")
+#         b.wait_text("#account-expiration-button", "Never lock account")
+#         b.wait_present("#account-expiration-button.disabled")
+#         b.wait_in_text("#password-expiration-button", "Require password change on")
+#         b.wait_present("#password-expiration-button.disabled")
+#
+#         # Lastly force a password change
+#         b.logout()
+#         self.login_and_go("/users")
+#         b.go("#/scruffy")
+#         b.wait_visible("#account")
+#         b.wait_text("#account-user-name", "scruffy")
+#         b.click("#password-reset-button")
+#         b.wait_popup("password-reset")
+#         b.click("#password-reset .btn-primary")
+#         b.wait_popdown("password-reset")
+#         b.wait_in_text("#password-expiration-button", "Password must be changed")
+#         self.assertEqual(self.accountExpiryInfo("scruffy", "Password expires"), "password must be changed")
+#
+    def testSessionRecording(self):
         b = self.browser
         m = self.machine
 
         self.login_and_go("/users")
 
-        # Add a user externally
         m.execute("useradd anton")
         m.execute("echo anton:foobar | chpasswd")
         b.wait_in_text('#accounts-list', "anton")
 
-        # Set a real name
         b.go("#/anton")
         b.wait_visible("#account")
         b.wait_text("#account-user-name", "anton")
-        b.set_val('#account-real-name', "Anton Arbitrary")
-        b.wait_not_attr('#account-real-name', 'data-dirty', 'true')
-        # don't wait for /etc/passwd to be current - this should hold true once the 'data-dirty' was removed
-        self.assertIn("Anton Arbitrary", m.execute("grep anton /etc/passwd"))
-
-        good_password = "tqymuVh.ZfZnP§9Wr=LM3JyG5yx"
-        # Delete it
-        b.click('#account-delete')
-        b.wait_popup('account-confirm-delete-dialog')
-        b.click('#account-confirm-delete-apply')
-        b.wait_popdown('account-confirm-delete-dialog')
-        b.wait_visible("#accounts")
-        b.wait_not_in_text('#accounts-list', "Anton Arbitrary")
-
-        # Check root user
-        b.go("#/root")
-        b.wait_present("#account")
-        b.wait_visible("#account")
-        b.wait_text("#account-user-name", "root")
-        # some operations are not allowed for root user
-        b.wait_present("#account-delete.disabled")
-        b.wait_present("#account-logout")
-        b.wait_attr("#account-logout", "disabled", "disabled")
-        b.wait_present("#account-real-name-wrapper.disabled")
-        b.wait_present("#account-locked:not(:checked)")
-        # root account should not be locked by default on our images
-        self.assertIn(m.execute("passwd -S root").split()[1], ["P", "PS"])
-        # (un)locking root account introduced in version 161
-        if m.image != 'rhel-7-5-distropkg':
-            # now lock account
-            b.set_checked("#account-locked", True)
-            b.wait(lambda: m.execute("passwd -S root").split()[1] in ["L", "LK"])
-
-        # go back to accounts overview, check breadcrumb
-        b.click("#account .breadcrumb a")
-        b.wait_present("#accounts-create")
-
-        # Create a user from the UI
-        b.click('#accounts-create')
-        b.wait_popup('accounts-create-dialog')
-        b.set_val('#accounts-create-user-name', "berta")
-        b.set_val('#accounts-create-real-name', "Berta Bestimmt")
-        b.set_val('#accounts-create-pw1', good_password)
-        b.set_val('#accounts-create-pw2', good_password)
-        b.click('#accounts-create-create')
-        b.wait_popdown('accounts-create-dialog')
-        b.wait_in_text('#accounts-list', "Berta Bestimmt")
-
-        # Delete it externally
-        m.execute("userdel berta")
-        b.wait_not_in_text('#accounts-list', "Berta Bestimmt")
-
-        # Create a locked user
-        b.click('#accounts-create')
-        b.wait_popup('accounts-create-dialog')
-        b.set_val('#accounts-create-user-name', "jussi")
-        b.set_val('#accounts-create-real-name', "Jussi Junior")
-        b.set_val('#accounts-create-pw1', good_password)
-        b.set_val('#accounts-create-pw2', good_password)
-        b.set_checked('#accounts-create-locked', True)
-        b.click('#accounts-create-create')
-        b.wait_popdown('accounts-create-dialog')
-        b.wait_in_text('#accounts-list', "Jussi Junior")
-
-        admin_role_sel = 'input[data-name="%s"]' % m.get_admin_group()
-        b.wait(lambda: "jussi" in m.execute("grep jussi /etc/passwd"))
-        b.wait(lambda: "jussi" not in m.execute("grep %s /etc/group" % m.get_admin_group()))
-
-        # Unlock it and make it an admin
-        b.go("#/jussi")
-        b.wait_visible("#account")
-        b.wait_text("#account-user-name", "jussi")
-        b.set_checked('#account-locked', False)
-        b.wait_present(admin_role_sel + ":not(:checked)")
-        b.set_checked(admin_role_sel, True)
-        b.wait_present(admin_role_sel + ":checked")
-        b.wait(lambda: "jussi" in m.execute("grep %s /etc/group" % m.get_admin_group()))
-        # An alert which shows up once we've changed things
-        if m.image != 'rhel-7-5-distropkg':
-            b.wait_present("#account-roles .alert-info")
-        b.set_checked(admin_role_sel, False)
-        b.wait_present(admin_role_sel + ":not(:checked)")
-        b.wait(lambda: "jussi" not in m.execute("grep %s /etc/group" % m.get_admin_group()))
-        m.execute("/usr/sbin/usermod jussi -G %s -a" % m.get_admin_group())
-        b.wait_present(admin_role_sel + ":checked")
-
-        # Change the password of this account
-        b.go("#/jussi")
-        b.wait_visible("#account")
-        b.wait_text("#account-user-name", "jussi")
-        b.click('#account-set-password')
-        b.wait_popup('account-set-password-dialog')
-
-        # Something invalid
-        b.set_val("#account-set-password-pw1", 'a')
-        b.set_val("#account-set-password-pw2", 'a')
-        b.click('#account-set-password-apply')
-        b.wait_present(".check-passwords.has-error")
-        b.wait_in_text(".check-passwords.has-error .dialog-error.help-block", "Password quality check failed:")
-
-        good_password_2 = "cEwghLY§X9R&m8RLwk4Xfed9Bw="
-        # Now set to something valid
-        b.set_val("#account-set-password-pw1", good_password_2)
-        b.set_val("#account-set-password-pw2", good_password_2)
-        b.click('#account-set-password-apply')
-        b.wait_popdown('account-set-password-dialog')
-
-        # Logout and login with the new password
-        b.logout()
-        self.allow_restart_journal_messages()
-        b.open("/users")
-        b.wait_visible("#login")
-        b.set_val("#login-user-input", "jussi")
-        b.set_val("#login-password-input", good_password_2)
-        b.click('#login-button')
-        b.expect_load()
-        b.wait_present('#content')
-
-        self.allow_journal_messages("Password quality check failed:")
-        self.allow_journal_messages("The password is a palindrome")
-
-    def accountExpiryInfo(self, account, field):
-        for line in self.machine.execute("LC_ALL=C chage -l {0}".format(account)).split("\n"):
-            if line.startswith(field):
-                (name, delim, value) = line.partition(":")
-                return value.strip()
-        return None
-
-    def testExpire(self):
-        m = self.machine
-        b = self.browser
-
-        m.execute("useradd scruffy -s /bin/bash -c 'Scruffy' || true")
-        m.execute("echo scruffy:foobar | chpasswd")
-
-        self.login_and_go("/users")
-        b.go("#/scruffy")
-        b.wait_visible("#account")
-        b.wait_text("#account-user-name", "scruffy")
-
-        # Try to expire the account
-        b.wait_text("#account-expiration-button", "Never lock account")
-        self.assertEqual(self.accountExpiryInfo("scruffy", "Account expires"), "never")
-        b.click("#account-expiration-button")
-        b.wait_popup("account-expiration")
-        b.click("#account-expiration-expires")
-
-        # Try an invalid date
-        b.set_val("#account-expiration-input", "blah")
-        b.click("#account-expiration .btn-primary")
-        b.wait_present("#account-expiration .dialog-error")
-        b.wait_text("#account-expiration .dialog-error", "Invalid expiration date")
-
-        # Now a valid date 30 days in the future
-        when = datetime.datetime.now() + datetime.timedelta(days=30)
-        b.set_val("#account-expiration-input", when.isoformat().split("T")[0])
-        b.click("#account-expiration .btn-primary")
-        b.wait_popdown("account-expiration")
-        b.wait_in_text("#account-expiration-button", "Lock account on")
-        self.assertNotEqual(self.accountExpiryInfo("scruffy", "Account expires"), "never")
-
-        # Now try and change it back
-        b.click("#account-expiration-button")
-        b.wait_popup("account-expiration")
-        b.click("#account-expiration-never")
-        b.click("#account-expiration .btn-primary")
-        b.wait_popdown("account-expiration")
-        b.wait_text("#account-expiration-button", "Never lock account")
-        self.assertEqual(self.accountExpiryInfo("scruffy", "Account expires"), "never")
-
-        # Try to expire a password
-        b.wait_text("#password-expiration-button", "Never expire password")
-        self.assertEqual(self.accountExpiryInfo("scruffy", "Password expires"), "never")
-        b.click("#password-expiration-button")
-        b.wait_popup("password-expiration")
-        b.click("#password-expiration-expires")
-
-        # Try an invalid number
-        b.set_val("#password-expiration-input", "-3")
-        b.click("#password-expiration .btn-primary")
-        b.wait_present("#password-expiration .dialog-error")
-        b.wait_text("#password-expiration .dialog-error", "Invalid number of days")
-
-        # Expire password every 30 days
-        b.set_val("#password-expiration-input", "30")
-        b.click("#password-expiration .btn-primary")
-        b.wait_popdown("password-expiration")
-        b.wait_in_text("#password-expiration-button", "Require password change on")
-        self.assertNotEqual(self.accountExpiryInfo("scruffy", "Password expires"), "never")
-
-        # Now try and change it back
-        b.click("#password-expiration-button")
-        b.wait_popup("password-expiration")
-        b.click("#password-expiration-never")
-        b.click("#password-expiration .btn-primary")
-        b.wait_popdown("password-expiration")
-        b.wait_text("#password-expiration-button", "Never expire password")
-        self.assertEqual(self.accountExpiryInfo("scruffy", "Password expires"), "never")
-
-        # Now change it to expire again
-        b.click("#password-expiration-button")
-        b.wait_popup("password-expiration")
-        b.click("#password-expiration-expires")
-        b.set_val("#password-expiration-input", "30")
-        b.click("#password-expiration .btn-primary")
-        b.wait_popdown("password-expiration")
-
-        b.logout()
-        self.allow_authorize_journal_messages()
-        self.login_and_go("/users", user="scruffy")
-        b.go("#/scruffy")
-        b.wait_visible("#account")
-        b.wait_text("#account-user-name", "scruffy")
-        b.wait_text("#account-expiration-button", "Never lock account")
-        b.wait_present("#account-expiration-button.disabled")
-        b.wait_in_text("#password-expiration-button", "Require password change on")
-        b.wait_present("#password-expiration-button.disabled")
-
-        # Lastly force a password change
-        b.logout()
-        self.login_and_go("/users")
-        b.go("#/scruffy")
-        b.wait_visible("#account")
-        b.wait_text("#account-user-name", "scruffy")
-        b.click("#password-reset-button")
-        b.wait_popup("password-reset")
-        b.click("#password-reset .btn-primary")
-        b.wait_popdown("password-reset")
-        b.wait_in_text("#password-expiration-button", "Password must be changed")
-        self.assertEqual(self.accountExpiryInfo("scruffy", "Password expires"), "password must be changed")
+        b.click("#session-recording")
+        self.assertIn("/usr/bin/tlog-rec-session", m.execute("grep anton /etc/passwd"))
 
 
 if __name__ == '__main__':
