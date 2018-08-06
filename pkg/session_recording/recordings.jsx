@@ -223,46 +223,6 @@
         }
     }
 
-    /**
-     * Performs equality by iterating through keys on an object and returning false
-     * when any key has values which are not strictly equal between the arguments.
-     * Returns true when the values of all keys are strictly equal.
-     */
-    function shallowEqual(objA: mixed, objB: mixed): boolean {
-        if (objA === objB) {
-            return true;
-        }
-
-        if (typeof objA !== 'object' || objA === null ||
-            typeof objB !== 'object' || objB === null) {
-            return false;
-        }
-
-        var keysA = Object.keys(objA);
-        var keysB = Object.keys(objB);
-
-        if (keysA.length !== keysB.length) {
-            return false;
-        }
-
-        // Test for A's keys different from B.
-        var bHasOwnProperty = hasOwnProperty.bind(objB);
-        for (var i = 0; i < keysA.length; i++) {
-            if (!bHasOwnProperty(keysA[i]) || objA[keysA[i]] !== objB[keysA[i]]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    function shallowCompare(instance, nextProps, nextState) {
-        return (
-            !shallowEqual(instance.props, nextProps) ||
-            !shallowEqual(instance.state, nextState)
-        );
-    }
-
     function LogElement(props) {
         const entry = props.entry;
         const start = props.start;
@@ -303,14 +263,10 @@
             super(props);
             this.journalctlError = this.journalctlError.bind(this);
             this.journalctlIngest = this.journalctlIngest.bind(this);
-            this.journalctlPrepend = this.journalctlPrepend.bind(this);
             this.getLogs = this.getLogs.bind(this);
             this.loadLater = this.loadLater.bind(this);
-            this.loadEarlier = this.loadEarlier.bind(this);
             this.journalCtl = null;
             this.entries = [];
-            this.earlier_than = null;
-            this.load_earlier = false;
             this.state = {
                 cursor: null,
                 after: null,
@@ -320,36 +276,20 @@
             };
         }
 
-        shouldComponentUpdate(nextProps, nextState) {
-            return shallowCompare(this, nextProps, nextState);
-        }
-
         journalctlError(error) {
             console.warn(cockpit.message(error));
         }
 
         journalctlIngest(entryList) {
-            if (this.load_earlier === true) {
-                entryList.push(...this.entries);
-                this.entries = entryList;
-                this.setState({entries: this.entries });
-                this.load_earlier = false;
-            } else {
-                if (entryList.length > 0) {
-                    this.entries.push(...entryList);
-                    const after = this.entries[this.entries.length-1].__CURSOR;
-                    this.setState({entries: this.entries, after: after});
-                }
+            if (entryList.length > 0) {
+                this.entries.push(...entryList);
+                const after = this.entries[this.entries.length-1].__CURSOR;
+                this.setState({entries: this.entries, after: after});
             }
         }
 
-        journalctlPrepend(entryList) {
-            entryList.push(...this.entries);
-            this.setState({entries: this.entries});
-        }
-
         getLogs() {
-            if (this.state.start != null && this.state.end != null) {
+            if (this.props.start != null && this.props.end != null) {
                 if (this.journalCtl != null) {
                     this.journalCtl.stop();
                     this.journalCtl = null;
@@ -358,8 +298,8 @@
                 let matches = [];
 
                 let options = {
-                    since: formatDateTime(this.state.start),
-                    until: formatDateTime(this.state.end),
+                    since: formatDateTime(this.props.start),
+                    until: formatDateTime(this.props.end),
                     follow: false,
                     count: 10,
                 };
@@ -381,44 +321,43 @@
             }
         }
 
-        loadEarlier() {
-            this.load_earlier = true;
-            const start = this.state.start - 36000;
-            this.setState({start: start});
-        }
-
         loadLater() {
+            console.log(this.state.start);
+            console.log(this.state.end);
             const end = this.state.end + 360000;
             this.setState({end: end});
         }
 
         componentDidUpdate() {
-            if (this.props.recording) {
-                if (this.state.start === null && this.state.end === null) {
-                    this.setState({start: this.props.recording.start, end: this.props.recording.end});
-                    this.earlier_than = this.props.recording.start;
-                }
-                this.getLogs();
-            }
+            // console.log('received new props');
+            // console.log(this.props);
+            // if (prevProps.start !== this.props.start) {
+            //     this.setState({
+            //         start: this.props.start,
+            //         end: this.props.end,
+            //     });
+            //     this.getLogs();
+            // }
+            this.getLogs();
         }
 
         render() {
-            if (this.props.recording) {
+            let start = this.props.start;
+            if (start == null) {
+                return (<div>Loading...</div>);
+            } else {
                 return (
                     <div className="panel panel-default">
                         <div className="panel-heading">
                             <span>Logs</span>
-                            <button className="btn btn-default" style={{"float":"right"}} onClick={this.loadEarlier}>Load earlier entries</button>
                         </div>
-                        <LogsView entries={this.state.entries} start={this.props.recording.start}
-                                  end={this.props.recording.end} />
+                        <LogsView entries={this.state.entries} start={this.props.start}
+                                  end={this.props.end} />
                         <div className="panel-heading">
                             <button className="btn btn-default" onClick={this.loadLater}>Load later entries</button>
                         </div>
                     </div>
                 );
-            } else {
-                return (<div>Loading...</div>);
             }
         }
     }
@@ -445,6 +384,7 @@
 
         render() {
             let r = this.props.recording;
+            console.log(this.props.recording);
             if (r == null) {
                 return <span>Loading...</span>;
             } else {
@@ -454,61 +394,70 @@
                         matchList={this.props.recording.matchList} />);
 
                 return (
-                    <div className="container-fluid">
-                    <div className="row">
-                        <div className="col-md-12">
-                            <ol className="breadcrumb">
-                                <li><a onClick={this.goBackToList}>Session Recording</a></li>
-                                <li className="active">Session</li>
-                            </ol>
-                        </div>
-                    </div>
+                    <div>
+                        <div className="container-fluid">
                         <div className="row">
-                            <div className="col-md-6">
-                                <div className="panel panel-default">
-                                    <div className="panel-heading">
-                                        <span>{_("Recording")}</span>
-                                    </div>
-                                    <div className="panel-body">
-                                        <table className="form-table-ct">
-                                            <tr>
-                                                <td>{_("ID")}</td>
-                                                <td>{r.id}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>{_("Boot ID")}</td>
-                                                <td>{r.boot_id}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>{_("Session ID")}</td>
-                                                <td>{r.session_id}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>{_("PID")}</td>
-                                                <td>{r.pid}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>{_("Start")}</td>
-                                                <td>{formatDateTime(r.start)}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>{_("End")}</td>
-                                                <td>{formatDateTime(r.end)}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>{_("Duration")}</td>
-                                                <td>{formatDuration(r.end - r.start)}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>{_("User")}</td>
-                                                <td>{r.user}</td>
-                                            </tr>
-                                        </table>
+                            <div className="col-md-12">
+                                <ol className="breadcrumb">
+                                    <li><a onClick={this.goBackToList}>Session Recording</a></li>
+                                    <li className="active">Session</li>
+                                </ol>
+                            </div>
+                        </div>
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <div className="panel panel-default">
+                                        <div className="panel-heading">
+                                            <span>{_("Recording")}</span>
+                                        </div>
+                                        <div className="panel-body">
+                                            <table className="form-table-ct">
+                                                <tr>
+                                                    <td>{_("ID")}</td>
+                                                    <td>{r.id}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>{_("Boot ID")}</td>
+                                                    <td>{r.boot_id}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>{_("Session ID")}</td>
+                                                    <td>{r.session_id}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>{_("PID")}</td>
+                                                    <td>{r.pid}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>{_("Start")}</td>
+                                                    <td>{formatDateTime(r.start)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>{_("End")}</td>
+                                                    <td>{formatDateTime(r.end)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>{_("Duration")}</td>
+                                                    <td>{formatDuration(r.end - r.start)}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>{_("User")}</td>
+                                                    <td>{r.user}</td>
+                                                </tr>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="col-md-6 player-wrap">
+                                    {player}
+                                </div>
                             </div>
-                            <div className="col-md-6 player-wrap">
-                                {player}
+                        </div>
+                        <div className="container-fluid">
+                            <div className="row">
+                                <div className="col-md-12">
+                                    <Logs start={r.start} end={r.end} />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -679,7 +628,7 @@
                 dateSinceLastValid: null,
                 dateUntil: cockpit.location.options.dateUntil || null,
                 dateUntilLastValid: null,
-                /* value to filter recordings by username */
+                /* value to filter recordinLogsgs by username */
                 username: cockpit.location.options.username || null,
                 error_tlog_uid: false,
             }
@@ -932,16 +881,7 @@
                 );
             } else {
                 return (
-                    <div>
-                        <Recording recording={this.recordingMap[this.state.recordingID]} />
-                        <div className="container-fluid">
-                            <div className="row">
-                                <div className="col-md-12">
-                                    <Logs recording={this.recordingMap[this.state.recordingID]} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <Recording recording={this.recordingMap[this.state.recordingID]} />
             );
             }
         }
