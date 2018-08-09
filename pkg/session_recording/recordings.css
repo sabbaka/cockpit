@@ -374,4 +374,11 @@ table.listing-ct > thead th:last-child, tr.listing-ct-item td:last-child {
 #logs-view {
     height: 300px;
     overflow-y: scroll;
+    margin-bottom: 0;
+}
+
+.logs-view-log-time {
+    display: inline-block;
+    width: 150px;
+    vertical-align: middle;
 }

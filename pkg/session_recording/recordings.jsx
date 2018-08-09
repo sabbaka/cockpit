@@ -237,9 +237,8 @@
                 <div className="cockpit-log-warning">
                     <i className="fa fa-exclamation-triangle" />
                 </div>
-                <div className="cockpit-log-time">{formatDateTime(parseInt(entry.__REALTIME_TIMESTAMP / 1000))}</div>
+                <div className="logs-view-log-time">{formatDateTime(parseInt(entry.__REALTIME_TIMESTAMP / 1000))}</div>
                 <span className="cockpit-log-message">{entry.MESSAGE}</span>
-                <div className="cockpit-log-service">kernel</div>
             </div>
         );
     }
@@ -329,12 +328,11 @@
                     since: formatDateTime(this.start),
                     until: formatDateTime(this.end),
                     follow: false,
-                    count: 10,
+                    count: "all",
                 };
 
                 if (this.load_earlier === true) {
                     options["until"] = formatDateTime(this.earlier_than);
-                    options["count"] = "all";
                 } else if (this.state.after != null) {
                     options["after"] = this.state.after;
                     delete options.since;
