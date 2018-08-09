@@ -370,3 +370,8 @@ table.listing-ct > thead th:last-child, tr.listing-ct-item td:last-child {
 .highlighted {
     background-color: #ededed !important;
 }
+
+#logs-view {
+    height: 300px;
+    overflow-y: scroll;
+}

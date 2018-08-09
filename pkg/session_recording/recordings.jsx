@@ -292,7 +292,7 @@
             <LogElement entry={entry} start={start} end={end} />
         );
         return (
-            <div className="panel panel-default cockpit-log-panel">
+            <div className="panel panel-default cockpit-log-panel" id="logs-view">
                 {rows}
             </div>
         );
@@ -320,6 +320,11 @@
             };
         }
 
+        scrollToBottom() {
+            const logs_view = document.getElementById("logs-view");
+            logs_view.scrollTop = logs_view.scrollHeight;
+        }
+
         shouldComponentUpdate(nextProps, nextState) {
             return shallowCompare(this, nextProps, nextState);
         }
@@ -339,6 +344,7 @@
                     this.entries.push(...entryList);
                     const after = this.entries[this.entries.length - 1].__CURSOR;
                     this.setState({entries: this.entries, after: after});
+                    this.scrollToBottom();
                 }
             }
         }
