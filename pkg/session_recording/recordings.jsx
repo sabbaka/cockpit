@@ -266,6 +266,7 @@
             this.getLogs = this.getLogs.bind(this);
             this.loadLater = this.loadLater.bind(this);
             this.loadEarlier = this.loadEarlier.bind(this);
+            this.loadForTs = this.loadForTs.bind(this);
             this.journalCtl = null;
             this.entries = [];
             this.start = null;
@@ -359,6 +360,11 @@
             this.getLogs();
         }
 
+        loadForTs(ts) {
+            this.end = this.start + ts;
+            this.getLogs();
+        }
+
         componentDidUpdate() {
             if (this.props.recording) {
                 if (this.start === null && this.end === null) {
@@ -367,6 +373,10 @@
                     this.earlier_than = this.props.recording.start;
                 }
                 this.getLogs();
+            }
+            if (this.props.curTs) {
+                const ts = this.props.curTs;
+                this.loadForTs(ts);
             }
         }
 
@@ -419,7 +429,8 @@
                 let player =
                     (<Player.Player
                         ref="player"
-                        matchList={this.props.recording.matchList} />);
+                        matchList={this.props.recording.matchList}
+                        onTsChange={this.props.onTsChange} />);
 
                 return (
                     <div className="container-fluid">
@@ -636,6 +647,7 @@
             this.handleDateSinceChange = this.handleDateSinceChange.bind(this);
             this.handleDateUntilChange = this.handleDateUntilChange.bind(this);
             this.handleUsernameChange = this.handleUsernameChange.bind(this);
+            this.handleTsChange = this.handleTsChange.bind(this);
             /* Journalctl instance */
             this.journalctl = null;
             /* Recording ID journalctl instance is invoked with */
@@ -656,6 +668,7 @@
                 /* value to filter recordings by username */
                 username: cockpit.location.options.username || null,
                 error_tlog_uid: false,
+                curTs: null,
             }
         }
 
@@ -832,6 +845,10 @@
             cockpit.location.go([], $.extend(cockpit.location.options, { username: username }));
         }
 
+        handleTsChange(ts) {
+            this.setState({curTs: ts});
+        }
+
         componentDidMount() {
             let proc = cockpit.spawn(["getent", "passwd", "tlog"]);
 
@@ -907,11 +924,11 @@
             } else {
                 return (
                     <div>
-                        <Recording recording={this.recordingMap[this.state.recordingID]} />
+                        <Recording recording={this.recordingMap[this.state.recordingID]} onTsChange={this.handleTsChange} />
                         <div className="container-fluid">
                             <div className="row">
                                 <div className="col-md-12">
-                                    <Logs recording={this.recordingMap[this.state.recordingID]} />
+                                    <Logs recording={this.recordingMap[this.state.recordingID]} curTs={this.state.curTs} />
                                 </div>
                             </div>
                         </div>

@@ -748,6 +748,9 @@
                     }
                 }
 
+                /* Send packet ts to the top */
+                this.props.onTsChange(this.pkt.pos);
+                
                 /* Output the packet */
                 if (this.pkt.is_io) {
                     this.state.term.write(this.pkt.io);
