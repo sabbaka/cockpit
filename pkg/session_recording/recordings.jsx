@@ -223,46 +223,6 @@
         }
     }
 
-    /**
-     * Performs equality by iterating through keys on an object and returning false
-     * when any key has values which are not strictly equal between the arguments.
-     * Returns true when the values of all keys are strictly equal.
-     */
-    function shallowEqual(objA: mixed, objB: mixed): boolean {
-        if (objA === objB) {
-            return true;
-        }
-
-        if (typeof objA !== 'object' || objA === null ||
-            typeof objB !== 'object' || objB === null) {
-            return false;
-        }
-
-        var keysA = Object.keys(objA);
-        var keysB = Object.keys(objB);
-
-        if (keysA.length !== keysB.length) {
-            return false;
-        }
-
-        // Test for A's keys different from B.
-        var bHasOwnProperty = hasOwnProperty.bind(objB);
-        for (var i = 0; i < keysA.length; i++) {
-            if (!bHasOwnProperty(keysA[i]) || objA[keysA[i]] !== objB[keysA[i]]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    function shallowCompare(instance, nextProps, nextState) {
-        return (
-            !shallowEqual(instance.props, nextProps) ||
-            !shallowEqual(instance.state, nextState)
-        );
-    }
-
     function LogElement(props) {
         const entry = props.entry;
         const start = props.start;
@@ -320,13 +280,14 @@
             };
         }
 
+        scrollToTop() {
+            const logs_view = document.getElementById("logs-view");
+            logs_view.scrollTop = 0;
+        }
+
         scrollToBottom() {
             const logs_view = document.getElementById("logs-view");
             logs_view.scrollTop = logs_view.scrollHeight;
-        }
-
-        shouldComponentUpdate(nextProps, nextState) {
-            return shallowCompare(this, nextProps, nextState);
         }
 
         journalctlError(error) {
@@ -339,6 +300,7 @@
                 this.entries = entryList;
                 this.setState({entries: this.entries});
                 this.load_earlier = false;
+                this.scrollToTop();
             } else {
                 if (entryList.length > 0) {
                     this.entries.push(...entryList);
@@ -389,7 +351,7 @@
 
         loadEarlier() {
             this.load_earlier = true;
-            this.start = this.start - 36000;
+            this.start = this.start - 3600;
             this.getLogs();
         }
 
