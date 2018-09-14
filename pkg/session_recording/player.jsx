@@ -42,7 +42,7 @@
             throw Error("invalid \"" + field + "\" field type: " + typeof (value));
         }
         return value;
-    }
+    };
 
     /*
      * An auto-loading buffer of recording's packets.
@@ -202,7 +202,7 @@
         addPacket(pkt) {
             /* TODO Validate the packet */
             /* Add the packet */
-            this.pktList.push(pkt)
+            this.pktList.push(pkt);
             /* Notify any matching listeners */
             while (this.idxDfdList.length > 0) {
                 let idxDfd = this.idxDfdList[0];

@@ -44,7 +44,7 @@
             s = '0' + s;
         }
         return ((i < 0) ? '-' : '') + s;
-    }
+    };
 
     /*
      * Format date and time for a number of milliseconds since Epoch.
@@ -107,7 +107,7 @@
         }
 
         return false;
-    }
+    };
 
     /*
      * A component representing a date & time picker based on bootstrap-datetime-picker.
@@ -197,7 +197,7 @@
                 </div>
             );
         }
-    }
+    };
 
     /*
      * A component representing a username input text field.
@@ -221,7 +221,7 @@
                 </div>
             );
         }
-    }
+    };
 
     function LogElement(props) {
         const entry = props.entry;
@@ -399,7 +399,7 @@
                 return (<div>Loading...</div>);
             }
         }
-    }
+    };
 
     /*
      * A component representing a single recording view.
@@ -669,7 +669,7 @@
                 username: cockpit.location.options.username || null,
                 error_tlog_uid: false,
                 curTs: null,
-            }
+            };
         }
 
         /*

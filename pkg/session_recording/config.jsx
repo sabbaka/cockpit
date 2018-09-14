@@ -37,7 +37,7 @@
                 config: null,
                 file_error: null,
                 submitting: "none",
-            }
+            };
         }
 
         handleInputChange(e) {
@@ -273,7 +273,7 @@
                 );
             }
         }
-    }
+    };
 
     React.render(<Config />, document.getElementById('view'));
 }());
