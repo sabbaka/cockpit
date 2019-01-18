@@ -123,7 +123,7 @@ var info = {
             "systemd/services.css",
         ],
         "systemd/logs": [
-            "systemd/logs.js",
+            "systemd/logs.jsx",
         ],
         "systemd/system": [
             "systemd/host.js",
