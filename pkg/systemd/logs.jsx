@@ -839,15 +839,45 @@ class View extends React.Component {
         super(props);
         this.changeCurrentDay = this.changeCurrentDay.bind(this);
         this.changeSeverity = this.changeSeverity.bind(this);
+        this.journalStart = this.journalStart.bind(this);
+        this.journalctl = null;
         this.state = {
             entries: [],
             current_day: null,
+            start: null,
             severity: 'everything',
             entry: null,
         };
     }
 
+    journalStart() {
+        let matches = [];
+        let options = {
+            follow: false,
+            reverse: true,
+            count: 100,
+        };
+
+        if (this.state.start === 'boot') {
+            options["boot"] = null;
+        } else if (this.state.start === 'last-24h') {
+            options["since"] = "-1days";
+        } else if (this.state.start === 'last-week') {
+            options["since"] = "-7days";
+        }
+
+        this.journalctl = journal.journalctl(matches, options);
+
+        this.journalctl.stream((entries) => {
+            console.log(entries);
+            this.setState({entries: this.state.entries.concat(entries)});
+        }).fail((ex) => {
+            console.log(ex);
+        });
+    }
+
     changeCurrentDay(target) {
+        this.setState({ start: target });
         this.setState({ current_day: target });
     }
 
@@ -856,12 +886,29 @@ class View extends React.Component {
     }
 
     componentDidMount() {
-        let matches = [];
-        let options = [];
+        /* TODO use state for options
+                var all = false;
+                if (start == 'boot') {
+                    options["boot"] = null;
+                } else if (start == 'last-24h') {
+                    options["since"] = "-1days";
+                } else if (start == 'last-week') {
+                    options["since"] = "-7days";
+                } else {
+                    all = true;
+                }
 
-        journal.journalctl(matches, options).stream((entries) => {
-            this.setState({entries: entries});
-        });
+                if (prio_level) {
+                    for (var i = 0; i <= prio_level; i++)
+                        match.push('PRIORITY=' + i.toString());
+                }
+
+                if (prio_level === 2) {
+                    match.push('SYSLOG_IDENTIFIER=abrt-notification');
+                }
+         */
+
+        this.journalStart();
     }
 
     render() {
@@ -916,7 +963,7 @@ class View extends React.Component {
             return (
                 <React.Fragment>
                     {header}
-                    <Journal entries={this.state.entries} />
+                    <LogsView entries={this.state.entries} />
                 </React.Fragment>
             );
         } else {
@@ -953,37 +1000,85 @@ class JournalEntry extends React.Component {
     }
 }
 
-function LogElement(props) {
-    const entry = props.entry;
-    let problem_warning = (entry["PRIORITY"] < 4);
+let month_names = [
+    _("month-name", 'January'),
+    _("month-name", 'February'),
+    _("month-name", 'March'),
+    _("month-name", 'April'),
+    _("month-name", 'May'),
+    _("month-name", 'June'),
+    _("month-name", 'July'),
+    _("month-name", 'August'),
+    _("month-name", 'September'),
+    _("month-name", 'October'),
+    _("month-name", 'November'),
+    _("month-name", 'December')
+];
 
-    const ident = 1;
-    const count = 1;
+function format_entry(journal_entry) {
+    function pad(n) {
+        var str = n.toFixed();
+        if (str.length == 1)
+            str = '0' + str;
+        return str;
+    }
+
+    var d = new Date(journal_entry["__REALTIME_TIMESTAMP"] / 1000);
+    return {
+        cursor: journal_entry["__CURSOR"],
+        full: journal_entry,
+        day: month_names[d.getMonth()] + ' ' + d.getDate().toFixed() + ', ' + d.getFullYear().toFixed(),
+        time: pad(d.getHours()) + ':' + pad(d.getMinutes()),
+        bootid: journal_entry["_BOOT_ID"],
+        ident: journal_entry["SYSLOG_IDENTIFIER"] || journal_entry["_COMM"],
+        prio: journal_entry["PRIORITY"],
+        message: journal.printable(journal_entry["MESSAGE"])
+    };
+}
+
+function LogElement(props) {
+    const entry = format_entry(props.entry);
+
+    let problem = false;
+    let warning = false;
+
+    // TODO make actual count
+    let count = 1;
+
+    if (entry.ident === 'abrt-notification') {
+        problem = true;
+        entry.ident = entry['PROBLEM_BINARY'];
+    } else if (entry.prio < 4) {
+        warning = true;
+    }
 
     return (
-        <div className="cockpit-logline" role="row" key={entry["__MONOTONIC_TIMESTAMP"]}>
+        <div className="cockpit-logline" role="row" key={entry.cursor}>
             <div className="cockpit-log-warning" role="cell">
-                { problem_warning
+                { warning
                     ? <i className="fa fa-exclamation-triangle" />
-                    : <i className="fa fa-times-circle-o" />
+                    : null
+                }
+                { problem
+                    ? <i className="fa fa-times-circle-o" />
+                    : null
                 }
             </div>
-            <div className="cockpit-log-time" role="cell">{entry["__REALTIME_TIMESTAMP"]}</div>
-            <span className="cockpit-log-message" role="cell">{entry["MESSAGE"]}</span>
+            <div className="cockpit-log-time" role="cell">{entry.time}</div>
+            <span className="cockpit-log-message" role="cell">{entry.message}</span>
             {
                 count > 1
                     ? <div className="cockpit-log-service-container" role="cell">
-                        <div className="cockpit-log-service-reduced" role="cell">{ident}</div>
+                        <div className="cockpit-log-service-reduced" role="cell">{entry.ident}</div>
                         <span className="badge" role="cell">{count}&#160;<i className="fa fa-caret-right" /></span>
                     </div>
-                    : <div className="cockpit-log-service" role="cell">{ident}</div>
+                    : <div className="cockpit-log-service" role="cell">{entry.ident}</div>
             }
         </div>
     );
 }
 
 function LogsView(props) {
-    console.log(props);
     const entries = props.entries;
     const rows = entries.map((entry) =>
         <LogElement key={entry.__CURSOR} entry={entry} />
@@ -993,17 +1088,6 @@ function LogsView(props) {
             {rows}
         </div>
     );
-}
-
-class Journal extends React.Component {
-    render() {
-        console.log(this.props.entries);
-        return (
-            <div id="journal-box" className="container-fluid">
-                <LogsView entries={this.props.entries} />
-            </div>
-        );
-    }
 }
 
 ReactDOM.render(<View />, document.getElementById('view'));
