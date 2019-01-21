@@ -25,159 +25,6 @@ import { journal } from "journal";
 
 const _ = cockpit.gettext;
 
-class View extends React.Component {
-    constructor(props) {
-        super(props);
-        this.changeCurrentDay = this.changeCurrentDay.bind(this);
-        this.changeSeverity = this.changeSeverity.bind(this);
-        this.journalStart = this.journalStart.bind(this);
-        this.addEntries = this.addEntries.bind(this);
-        this.journalctl = null;
-        this.entries = [];
-        this.state = {
-            entries: [],
-            current_day: null,
-            start: null,
-            severity: 'everything',
-            entry: null,
-            streamed: 0,
-        };
-    }
-
-    addEntries() {
-        this.setState({
-            streamed: this.state.streamed + 1,
-            entries: this.entries,
-        });
-    }
-
-    journalStart() {
-        /* TODO use state for options
-                if (prio_level) {
-                    for (var i = 0; i <= prio_level; i++)
-                        match.push('PRIORITY=' + i.toString());
-                }
-                if (prio_level === 2) {
-                    match.push('SYSLOG_IDENTIFIER=abrt-notification');
-                }
-         */
-        let matches = [
-            "PRIORITY=0", "PRIORITY=1", "PRIORITY=2", "PRIORITY=3"
-        ];
-        let options = {
-            follow: false,
-            reverse: true,
-        };
-
-        if (this.state.start === 'boot') {
-            options["boot"] = null;
-        } else if (this.state.start === 'last-24h') {
-            options["since"] = "-1days";
-        } else if (this.state.start === 'last-week') {
-            options["since"] = "-7days";
-        }
-
-        this.journalctl = journal.journalctl(matches, options);
-
-        this.journalctl.done(() => {
-            console.log("it is done");
-        }).stream((entries) => {
-            this.entries = this.entries.concat(entries);
-            this.addEntries();
-        });
-    }
-
-    changeCurrentDay(target) {
-        this.setState({ start: target });
-        this.setState({ current_day: target });
-    }
-
-    changeSeverity(target) {
-        this.setState({ severity: target });
-    }
-
-    componentDidMount() {
-        this.journalStart();
-    }
-
-    shouldComponentUpdate(nextProps, nextState) {
-        if (this.state.streamed !== nextState.streamed) {
-            return true;
-        }
-    }
-
-    render() {
-        let currentDayMenu = {
-            recent: _("Recent"),
-            boot: _("Current boot"),
-            last_24h: _("Last 24 hours"),
-            last_week: _("Last 7 days"),
-        };
-
-        let severityMenu = {
-            '*': _("Everything"),
-            '0': _("Only Emergency"),
-            '1': _("Alert and above"),
-            '2': _("Critical and above"),
-            '3': _("Error and above"),
-            '4': _("Warning and above"),
-            '5': _("Notice and above"),
-            '6': _("Info and above"),
-            '7': _("Debug and above"),
-        };
-
-        let header = (
-            <div className="content-header-extra">
-
-                <Select.Select key="currentday" onChange={this.changeCurrentDay}
-                               id="currentday" initial={this.state.current_day}>
-                    <Select.SelectEntry data='recent' key='recent'>{currentDayMenu.recent}</Select.SelectEntry>
-                    <Select.SelectEntry data='boot' key='boot'>{currentDayMenu.boot}</Select.SelectEntry>
-                    <Select.SelectEntry data='last_24h' key='last_24h'>{currentDayMenu.last_24h}</Select.SelectEntry>
-                    <Select.SelectEntry data='last_week' key='last_week'>{currentDayMenu.last_week}</Select.SelectEntry>
-                </Select.Select>
-
-                <label className="control-label" htmlFor="prio">{_("Severity")}</label>
-                <Select.Select key="prio" onChange={this.changeSeverity}
-                               id="prio" initial={this.state.severity}>
-                    <Select.SelectEntry data='*' key='*'>{severityMenu['*']}</Select.SelectEntry>
-                    <Select.SelectEntry data='0' key='0'>{severityMenu['0']}</Select.SelectEntry>
-                    <Select.SelectEntry data='1' key='1'>{severityMenu['1']}</Select.SelectEntry>
-                    <Select.SelectEntry data='2' key='2'>{severityMenu['2']}</Select.SelectEntry>
-                    <Select.SelectEntry data='3' key='3'>{severityMenu['3']}</Select.SelectEntry>
-                    <Select.SelectEntry data='4' key='4'>{severityMenu['4']}</Select.SelectEntry>
-                    <Select.SelectEntry data='5' key='5'>{severityMenu['5']}</Select.SelectEntry>
-                    <Select.SelectEntry data='6' key='6'>{severityMenu['6']}</Select.SelectEntry>
-                    <Select.SelectEntry data='7' key='7'>{severityMenu['7']}</Select.SelectEntry>
-                </Select.Select>
-
-            </div>
-        );
-
-        const entries = this.state.entries.map((_entry, index, array) => {
-            const entry = format_entry(_entry);
-            if (index === 0) {
-                return (<LogElement key={entry.cursor} entry={entry} day={entry.day} />);
-            } else if (entry.day_single > format_entry(array[index - 1]).day_single) {
-                return (<LogElement key={entry.cursor} entry={entry} day={entry.day} />);
-            } else {
-                return (<LogElement key={entry.cursor} entry={entry} />);
-            }
-        });
-
-        return (
-            <React.Fragment>
-                {header}
-                <div id="journal-box" className="container-fluid">
-                    <div className="panel panel-default cockpit-log-panel" id="logs-view">
-                        {entries}
-                    </div>
-                </div>
-            </React.Fragment>
-        );
-    }
-}
-
 let month_names = [
     _("month-name", 'January'),
     _("month-name", 'February'),
@@ -222,7 +69,6 @@ function DayHeader(props) {
 }
 
 function LogElement(props) {
-    // const entry = format_entry(props.entry);
     const entry = props.entry;
 
     let problem = false;
@@ -261,6 +107,173 @@ function LogElement(props) {
             </div>
         </React.Fragment>
     );
+}
+
+class View extends React.Component {
+    constructor(props) {
+        super(props);
+        this.changeCurrentDay = this.changeCurrentDay.bind(this);
+        this.changeSeverity = this.changeSeverity.bind(this);
+        this.journalStart = this.journalStart.bind(this);
+        this.journalctl = null;
+        this.state = {
+            entries: [],
+            current_day: null,
+            start: null,
+            entry: null,
+            // done: false,
+            prio: '3',
+        };
+    }
+
+    addEntries(entries) {
+        this.setState({
+            streamed: this.state.streamed + 1,
+            entries: this.entries,
+        });
+    }
+
+    journalStart() {
+        // this.setState({
+        //     done: false
+        // });
+
+        let matches = [];
+
+        const prio = parseInt(this.state.prio);
+
+        if (prio) {
+            for (let i = 0; i <= prio; i++) {
+                console.log(i);
+                matches.push('PRIORITY=' + i.toString());
+            }
+        }
+
+        if (this.state.prio === "2") {
+            matches.push('SYSLOG_IDENTIFIER=abrt-notification');
+        }
+
+        console.log(matches);
+
+        let options = {
+            follow: false,
+            reverse: true,
+        };
+
+        if (this.state.start === 'boot') {
+            options["boot"] = null;
+        } else if (this.state.start === 'last-24h') {
+            options["since"] = "-1days";
+        } else if (this.state.start === 'last-week') {
+            options["since"] = "-7days";
+        }
+
+        this.journalctl = journal.journalctl(matches, options);
+
+        this.journalctl.done(() => {
+            // this.setState({done: true});
+            this.journalctl = null;
+        }).stream((entries) => {
+            this.setState((state) => {
+                return {entries: state.entries.concat(entries)};
+            });
+        });
+    }
+
+    changeCurrentDay(target) {
+        this.setState({
+            start: target,
+            current_day: target
+        });
+    }
+
+    changeSeverity(target) {
+        this.setState({
+            entries: [],
+            prio: target,
+        });
+        this.journalStart();
+    }
+
+    componentDidMount() {
+        this.journalStart();
+    }
+
+    // shouldComponentUpdate(nextProps, nextState) {
+    //     return (this.state.done !== nextState.done);
+    // }
+
+    render() {
+        let currentDayMenu = {
+            recent: _("Recent"),
+            boot: _("Current boot"),
+            last_24h: _("Last 24 hours"),
+            last_week: _("Last 7 days"),
+        };
+
+        let severityMenu = {
+            '*': _("Everything"),
+            '0': _("Only Emergency"),
+            '1': _("Alert and above"),
+            '2': _("Critical and above"),
+            '3': _("Error and above"),
+            '4': _("Warning and above"),
+            '5': _("Notice and above"),
+            '6': _("Info and above"),
+            '7': _("Debug and above"),
+        };
+
+        let filter_menu = (
+            <div className="content-header-extra">
+                <Select.Select key="currentday" onChange={this.changeCurrentDay}
+                               id="currentday" initial={this.state.current_day}>
+                    <Select.SelectEntry data='recent' key='recent'>{currentDayMenu.recent}</Select.SelectEntry>
+                    <Select.SelectEntry data='boot' key='boot'>{currentDayMenu.boot}</Select.SelectEntry>
+                    <Select.SelectEntry data='last_24h' key='last_24h'>{currentDayMenu.last_24h}</Select.SelectEntry>
+                    <Select.SelectEntry data='last_week' key='last_week'>{currentDayMenu.last_week}</Select.SelectEntry>
+                </Select.Select>
+                <label className="control-label" htmlFor="prio">{_("Severity")}</label>
+                <Select.Select key="prio" onChange={this.changeSeverity}
+                               id="prio" initial={this.state.severity}>
+                    <Select.SelectEntry data='*' key='*'>{severityMenu['*']}</Select.SelectEntry>
+                    <Select.SelectEntry data='0' key='0'>{severityMenu['0']}</Select.SelectEntry>
+                    <Select.SelectEntry data='1' key='1'>{severityMenu['1']}</Select.SelectEntry>
+                    <Select.SelectEntry data='2' key='2'>{severityMenu['2']}</Select.SelectEntry>
+                    <Select.SelectEntry data='3' key='3'>{severityMenu['3']}</Select.SelectEntry>
+                    <Select.SelectEntry data='4' key='4'>{severityMenu['4']}</Select.SelectEntry>
+                    <Select.SelectEntry data='5' key='5'>{severityMenu['5']}</Select.SelectEntry>
+                    <Select.SelectEntry data='6' key='6'>{severityMenu['6']}</Select.SelectEntry>
+                    <Select.SelectEntry data='7' key='7'>{severityMenu['7']}</Select.SelectEntry>
+                </Select.Select>
+
+            </div>
+        );
+
+        const entries =
+            this.state.entries.length === 0 ? _("Loading...") : (
+                this.state.entries.map((_entry, index, array) => {
+                    const entry = format_entry(_entry);
+                    if (index === 0) {
+                        return (<LogElement key={entry.cursor} entry={entry} day={entry.day} />);
+                    } else if (entry.day_single > format_entry(array[index - 1]).day_single) {
+                        return (<LogElement key={entry.cursor} entry={entry} day={entry.day} />);
+                    } else {
+                        return (<LogElement key={entry.cursor} entry={entry} />);
+                    }
+                })
+            );
+
+        return (
+            <React.Fragment>
+                {filter_menu}
+                <div id="journal-box" className="container-fluid">
+                    <div className="panel panel-default cockpit-log-panel" id="logs-view">
+                        {entries}
+                    </div>
+                </div>
+            </React.Fragment>
+        );
+    }
 }
 
 ReactDOM.render(<View />, document.getElementById('view'));
