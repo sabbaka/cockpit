@@ -123,7 +123,10 @@ var info = {
             "systemd/services.css",
         ],
         "systemd/logs": [
-            "systemd/logs.jsx",
+            "systemd/logs.js",
+        ],
+        "systemd/logsreact": [
+            "systemd/logsreact.jsx",
         ],
         "systemd/system": [
             "systemd/host.js",
@@ -238,6 +241,7 @@ var info = {
 
         "systemd/index.html",
         "systemd/logs.html",
+        "systemd/logsreact.html",
         "systemd/services.html",
         "systemd/terminal.html",
         "systemd/hwinfo.html",
