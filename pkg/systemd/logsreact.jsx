@@ -69,7 +69,6 @@ function DayHeader(props) {
 }
 
 function RebootDivider(props) {
-    /* <div className="cockpit-logline" role="row" key={"reboot-" + props.reboot_key}> */
     return (
         <div className="cockpit-logline" role="row">
             <div className="cockpit-log-warning" role="cell" />
@@ -132,13 +131,11 @@ class View extends React.Component {
         this.changeSeverity = this.changeSeverity.bind(this);
         this.journalStart = this.journalStart.bind(this);
         this.journalctl = null;
-        this.prio = 3;
-        this.current_day = null;
+        this.prio = cockpit.location.options.prio || 3;
+        this.current_day = cockpit.location.options.current_day || null;
         this.boot_counter = 0;
         this.state = {
-            entries: [],
-            current_day: null,
-            prio: '3',
+            entries: []
         };
     }
 
@@ -195,7 +192,6 @@ class View extends React.Component {
     }
 
     changeCurrentDay(target) {
-        // this.setState({current_day: target});
         let options = cockpit.location.options;
         options.current_day = target;
         cockpit.location.go([], options);
@@ -208,7 +204,6 @@ class View extends React.Component {
         options.prio = target;
         cockpit.location.go([], options);
         this.prio = target;
-        // this.setState({prio: target});
         this.journalStart();
     }
 
