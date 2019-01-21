@@ -68,6 +68,16 @@ function DayHeader(props) {
     );
 }
 
+function RebootDivider(props) {
+    /* <div className="cockpit-logline" role="row" key={"reboot-" + props.reboot_key}> */
+    return (
+        <div className="cockpit-logline" role="row">
+            <div className="cockpit-log-warning" role="cell" />
+            <span className="cockpit-log-message cockpit-logmsg-reboot" role="cell">{_("Reboot")}</span>
+        </div>
+    );
+}
+
 function LogElement(props) {
     const entry = props.entry;
 
@@ -75,6 +85,7 @@ function LogElement(props) {
     let warning = false;
 
     let day_header = null;
+    let reboot_header = null;
 
     if (entry.ident === 'abrt-notification') {
         problem = true;
@@ -87,9 +98,14 @@ function LogElement(props) {
         day_header = (<DayHeader day={props.day} />);
     }
 
+    if (props.reboot) {
+        reboot_header = (<RebootDivider />);
+    }
+
     return (
         <React.Fragment>
             {day_header}
+            {reboot_header}
             <div className="cockpit-logline" role="row" key={entry.cursor}>
                 <div className="cockpit-log-warning" role="cell">
                     { warning
@@ -118,6 +134,7 @@ class View extends React.Component {
         this.journalctl = null;
         this.prio = 3;
         this.current_day = null;
+        this.boot_counter = 0;
         this.state = {
             entries: [],
             current_day: null,
@@ -178,14 +195,20 @@ class View extends React.Component {
     }
 
     changeCurrentDay(target) {
+        // this.setState({current_day: target});
+        let options = cockpit.location.options;
+        options.current_day = target;
+        cockpit.location.go([], options);
         this.current_day = target;
-        this.setState({current_day: target});
         this.journalStart();
     }
 
     changeSeverity(target) {
+        let options = cockpit.location.options;
+        options.prio = target;
+        cockpit.location.go([], options);
         this.prio = target;
-        this.setState({prio: target});
+        // this.setState({prio: target});
         this.journalStart();
     }
 
@@ -216,7 +239,7 @@ class View extends React.Component {
         let filter_menu = (
             <div className="content-header-extra">
                 <Select.Select key="currentday" onChange={this.changeCurrentDay}
-                               id="currentday" initial={this.state.current_day}>
+                               id="currentday" initial={this.current_day}>
                     <Select.SelectEntry data='recent' key='recent'>{currentDayMenu.recent}</Select.SelectEntry>
                     <Select.SelectEntry data='boot' key='boot'>{currentDayMenu.boot}</Select.SelectEntry>
                     <Select.SelectEntry data='last_24h' key='last_24h'>{currentDayMenu.last_24h}</Select.SelectEntry>
@@ -224,7 +247,7 @@ class View extends React.Component {
                 </Select.Select>
                 <label className="control-label" htmlFor="prio">{_("Severity")}</label>
                 <Select.Select key="prio" onChange={this.changeSeverity}
-                               id="prio" initial={this.state.prio}>
+                               id="prio" initial={this.prio}>
                     <Select.SelectEntry data='*' key='*'>{severityMenu['*']}</Select.SelectEntry>
                     <Select.SelectEntry data='0' key='0'>{severityMenu['0']}</Select.SelectEntry>
                     <Select.SelectEntry data='1' key='1'>{severityMenu['1']}</Select.SelectEntry>
@@ -245,8 +268,16 @@ class View extends React.Component {
                     const entry = format_entry(_entry);
                     if (index === 0) {
                         return (<LogElement key={entry.cursor} entry={entry} day={entry.day} />);
-                    } else if (entry.day_single !== format_entry(array[index - 1]).day_single) {
+                    }
+
+                    let prev_entry = format_entry(array[index - 1]);
+
+                    if (entry.day_single !== prev_entry.day_single && entry.bootid !== prev_entry.bootid) {
+                        return (<LogElement key={entry.cursor} entry={entry} day={entry.day} reboot />);
+                    } else if (entry.day_single !== prev_entry.day_single) {
                         return (<LogElement key={entry.cursor} entry={entry} day={entry.day} />);
+                    } else if (entry.bootid !== prev_entry.bootid) {
+                        return (<LogElement key={entry.cursor} entry={entry} reboot />);
                     } else {
                         return (<LogElement key={entry.cursor} entry={entry} />);
                     }
