@@ -117,10 +117,10 @@ class View extends React.Component {
         this.journalStart = this.journalStart.bind(this);
         this.journalctl = null;
         this.prio = 3;
+        this.current_day = null;
         this.state = {
             entries: [],
             current_day: null,
-            start: null,
             prio: '3',
         };
     }
@@ -158,13 +158,15 @@ class View extends React.Component {
             reverse: true,
         };
 
-        if (this.state.start === 'boot') {
+        if (this.current_day === 'boot') {
             options["boot"] = null;
-        } else if (this.state.start === 'last-24h') {
+        } else if (this.current_day === 'last_24h') {
             options["since"] = "-1days";
-        } else if (this.state.start === 'last-week') {
+        } else if (this.current_day === 'last_week') {
             options["since"] = "-7days";
         }
+
+        console.log(options);
 
         this.journalctl = journal.journalctl(matches, options);
 
@@ -176,10 +178,9 @@ class View extends React.Component {
     }
 
     changeCurrentDay(target) {
-        this.setState({
-            start: target,
-            current_day: target
-        });
+        this.current_day = target;
+        this.setState({current_day: target});
+        this.journalStart();
     }
 
     changeSeverity(target) {
