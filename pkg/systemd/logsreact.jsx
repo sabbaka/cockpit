@@ -77,6 +77,16 @@ function RebootDivider(props) {
     );
 }
 
+function LoadMore(props) {
+    return (
+        <div className="journal-start" role="rowgroup">
+            <button id="journal-load-earlier" className="btn btn-default" data-inline="true" data-mini="true" onClick={props.onClick}>
+                {_("Load earlier entries")}
+            </button>
+        </div>
+    );
+}
+
 function LogElement(props) {
     const entry = props.entry;
 
@@ -130,10 +140,11 @@ class View extends React.Component {
         this.changeCurrentDay = this.changeCurrentDay.bind(this);
         this.changeSeverity = this.changeSeverity.bind(this);
         this.journalStart = this.journalStart.bind(this);
+        this.loadMore = this.loadMore.bind(this);
         this.journalctl = null;
         this.prio = cockpit.location.options.prio || 3;
         this.current_day = cockpit.location.options.current_day || null;
-        this.boot_counter = 0;
+        this.cursor = null;
         this.state = {
             entries: []
         };
@@ -146,12 +157,19 @@ class View extends React.Component {
         });
     }
 
+    loadMore() {
+        this.cursor = this.state.entries.slice(-1)["__CURSOR"];
+        this.journalStart();
+    }
+
     journalStart() {
         if (this.journalctl) {
             this.journalctl.stop();
         }
 
-        this.setState({entries: []});
+        if (this.cursor === null) {
+            this.setState({entries: []});
+        }
 
         let matches = [];
 
@@ -178,6 +196,10 @@ class View extends React.Component {
             options["since"] = "-1days";
         } else if (this.current_day === 'last_week') {
             options["since"] = "-7days";
+        }
+
+        if (this.cursor) {
+            options["after"] = this.cursor;
         }
 
         console.log(options);
@@ -212,14 +234,14 @@ class View extends React.Component {
     }
 
     render() {
-        let currentDayMenu = {
+        const currentDayMenu = {
             recent: _("Recent"),
             boot: _("Current boot"),
             last_24h: _("Last 24 hours"),
             last_week: _("Last 7 days"),
         };
 
-        let severityMenu = {
+        const severityMenu = {
             '*': _("Everything"),
             '0': _("Only Emergency"),
             '1': _("Alert and above"),
@@ -231,7 +253,7 @@ class View extends React.Component {
             '7': _("Debug and above"),
         };
 
-        let filter_menu = (
+        const filter_menu = (
             <div className="content-header-extra">
                 <Select.Select key="currentday" onChange={this.changeCurrentDay}
                                id="currentday" initial={this.current_day}>
@@ -256,6 +278,8 @@ class View extends React.Component {
 
             </div>
         );
+
+        const load_more = (<LoadMore onClick={this.loadMore} />);
 
         const entries =
             this.state.entries.length === 0 ? _("Loading...") : (
@@ -286,6 +310,7 @@ class View extends React.Component {
                     <div className="panel panel-default cockpit-log-panel" id="logs-view">
                         {entries}
                     </div>
+                    { this.state.entries.length > 0 ? load_more : null }
                 </div>
             </React.Fragment>
         );
