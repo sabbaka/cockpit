@@ -116,12 +116,11 @@ class View extends React.Component {
         this.changeSeverity = this.changeSeverity.bind(this);
         this.journalStart = this.journalStart.bind(this);
         this.journalctl = null;
+        this.prio = 3;
         this.state = {
             entries: [],
             current_day: null,
             start: null,
-            entry: null,
-            // done: false,
             prio: '3',
         };
     }
@@ -134,26 +133,25 @@ class View extends React.Component {
     }
 
     journalStart() {
-        // this.setState({
-        //     done: false
-        // });
+        if (this.journalctl) {
+            this.journalctl.stop();
+        }
+
+        this.setState({entries: []});
 
         let matches = [];
 
-        const prio = parseInt(this.state.prio);
+        const prio = parseInt(this.prio);
 
         if (prio) {
             for (let i = 0; i <= prio; i++) {
-                console.log(i);
                 matches.push('PRIORITY=' + i.toString());
             }
         }
 
-        if (this.state.prio === "2") {
+        if (this.prio === "2") {
             matches.push('SYSLOG_IDENTIFIER=abrt-notification');
         }
-
-        console.log(matches);
 
         let options = {
             follow: false,
@@ -170,10 +168,7 @@ class View extends React.Component {
 
         this.journalctl = journal.journalctl(matches, options);
 
-        this.journalctl.done(() => {
-            // this.setState({done: true});
-            this.journalctl = null;
-        }).stream((entries) => {
+        this.journalctl.stream((entries) => {
             this.setState((state) => {
                 return {entries: state.entries.concat(entries)};
             });
@@ -188,20 +183,14 @@ class View extends React.Component {
     }
 
     changeSeverity(target) {
-        this.setState({
-            entries: [],
-            prio: target,
-        });
+        this.prio = target;
+        this.setState({prio: target});
         this.journalStart();
     }
 
     componentDidMount() {
         this.journalStart();
     }
-
-    // shouldComponentUpdate(nextProps, nextState) {
-    //     return (this.state.done !== nextState.done);
-    // }
 
     render() {
         let currentDayMenu = {
@@ -234,7 +223,7 @@ class View extends React.Component {
                 </Select.Select>
                 <label className="control-label" htmlFor="prio">{_("Severity")}</label>
                 <Select.Select key="prio" onChange={this.changeSeverity}
-                               id="prio" initial={this.state.severity}>
+                               id="prio" initial={this.state.prio}>
                     <Select.SelectEntry data='*' key='*'>{severityMenu['*']}</Select.SelectEntry>
                     <Select.SelectEntry data='0' key='0'>{severityMenu['0']}</Select.SelectEntry>
                     <Select.SelectEntry data='1' key='1'>{severityMenu['1']}</Select.SelectEntry>
@@ -255,7 +244,7 @@ class View extends React.Component {
                     const entry = format_entry(_entry);
                     if (index === 0) {
                         return (<LogElement key={entry.cursor} entry={entry} day={entry.day} />);
-                    } else if (entry.day_single > format_entry(array[index - 1]).day_single) {
+                    } else if (entry.day_single !== format_entry(array[index - 1]).day_single) {
                         return (<LogElement key={entry.cursor} entry={entry} day={entry.day} />);
                     } else {
                         return (<LogElement key={entry.cursor} entry={entry} />);
