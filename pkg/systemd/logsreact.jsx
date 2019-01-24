@@ -128,7 +128,14 @@ function LogElement(props) {
                 </div>
                 <div className="cockpit-log-time" role="cell">{entry.time}</div>
                 <span className="cockpit-log-message" role="cell">{entry.message}</span>
-                <div className="cockpit-log-service" role="cell">{entry.ident}</div>
+                {
+                    props.count > 1
+                        ? <div className="cockpit-log-service-container" role="cell">
+                            <div className="cockpit-log-service-reduced" role="cell">{entry.ident}</div>
+                            <span className="badge" role="cell">{props.count}&#160;<i className="fa fa-caret-right" /></span>
+                        </div>
+                        : <div className="cockpit-log-service" role="cell">{entry.ident}</div>
+                }
             </div>
         </React.Fragment>
     );
@@ -142,10 +149,10 @@ class View extends React.Component {
         this.journalStart = this.journalStart.bind(this);
         this.loadMore = this.loadMore.bind(this);
         this.journalctl = null;
-        this.prio = cockpit.location.options.prio || 3;
-        this.current_day = cockpit.location.options.current_day || null;
         this.cursor = null;
         this.state = {
+            prio: cockpit.location.options.prio || "3",
+            current_day: cockpit.location.options.current_day || null,
             entries: []
         };
     }
@@ -173,7 +180,7 @@ class View extends React.Component {
 
         let matches = [];
 
-        const prio = parseInt(this.prio);
+        const prio = parseInt(this.state.prio);
 
         if (prio) {
             for (let i = 0; i <= prio; i++) {
@@ -181,7 +188,7 @@ class View extends React.Component {
             }
         }
 
-        if (this.prio === "2") {
+        if (prio === 2) {
             matches.push('SYSLOG_IDENTIFIER=abrt-notification');
         }
 
@@ -190,19 +197,17 @@ class View extends React.Component {
             reverse: true,
         };
 
-        if (this.current_day === 'boot') {
+        if (this.state.current_day === 'boot') {
             options["boot"] = null;
-        } else if (this.current_day === 'last_24h') {
+        } else if (this.state.current_day === 'last_24h') {
             options["since"] = "-1days";
-        } else if (this.current_day === 'last_week') {
+        } else if (this.state.current_day === 'last_week') {
             options["since"] = "-7days";
         }
 
         if (this.cursor) {
             options["after"] = this.cursor;
         }
-
-        console.log(options);
 
         this.journalctl = journal.journalctl(matches, options);
 
@@ -217,16 +222,14 @@ class View extends React.Component {
         let options = cockpit.location.options;
         options.current_day = target;
         cockpit.location.go([], options);
-        this.current_day = target;
-        this.journalStart();
+        this.setState({current_day: target}, this.journalStart);
     }
 
     changeSeverity(target) {
         let options = cockpit.location.options;
         options.prio = target;
         cockpit.location.go([], options);
-        this.prio = target;
-        this.journalStart();
+        this.setState({prio: target}, this.journalStart);
     }
 
     componentDidMount() {
@@ -256,7 +259,7 @@ class View extends React.Component {
         const filter_menu = (
             <div className="content-header-extra">
                 <Select.Select key="currentday" onChange={this.changeCurrentDay}
-                               id="currentday" initial={this.current_day}>
+                               id="currentday" initial={this.state.current_day}>
                     <Select.SelectEntry data='recent' key='recent'>{currentDayMenu.recent}</Select.SelectEntry>
                     <Select.SelectEntry data='boot' key='boot'>{currentDayMenu.boot}</Select.SelectEntry>
                     <Select.SelectEntry data='last_24h' key='last_24h'>{currentDayMenu.last_24h}</Select.SelectEntry>
@@ -264,7 +267,7 @@ class View extends React.Component {
                 </Select.Select>
                 <label className="control-label" htmlFor="prio">{_("Severity")}</label>
                 <Select.Select key="prio" onChange={this.changeSeverity}
-                               id="prio" initial={this.prio}>
+                               id="prio" initial={this.state.prio}>
                     <Select.SelectEntry data='*' key='*'>{severityMenu['*']}</Select.SelectEntry>
                     <Select.SelectEntry data='0' key='0'>{severityMenu['0']}</Select.SelectEntry>
                     <Select.SelectEntry data='1' key='1'>{severityMenu['1']}</Select.SelectEntry>
@@ -281,12 +284,30 @@ class View extends React.Component {
 
         const load_more = (<LoadMore onClick={this.loadMore} />);
 
+        let count = 1;
+
         const entries =
             this.state.entries.length === 0 ? _("Loading...") : (
                 this.state.entries.map((_entry, index, array) => {
                     const entry = format_entry(_entry);
+
                     if (index === 0) {
                         return (<LogElement key={entry.cursor} entry={entry} day={entry.day} />);
+                    }
+
+                    if ((index + 1) < array.length) {
+                        let next_entry = format_entry(array[index + 1]);
+
+                        if (entry.message === next_entry.message) {
+                            count++;
+                            return null;
+                        }
+                    }
+
+                    if (count > 1) {
+                        const count_prop = count;
+                        count = 1;
+                        return (<LogElement key={entry.cursor} entry={entry} count={count_prop} />);
                     }
 
                     let prev_entry = format_entry(array[index - 1]);
