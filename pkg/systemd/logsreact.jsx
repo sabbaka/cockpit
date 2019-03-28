@@ -140,7 +140,29 @@ function LogElement(props) {
         </React.Fragment>
     );
 }
-
+/*
+class SingleLog extends React.Component {
+    render() {
+        return (
+            <div id="journal-entry" className="container-fluid" hidden>
+                <ol className="breadcrumb">
+                    <li><a id="journal-navigate-home" translatable="yes">Logs</a></li>
+                    <li className="active" translatable="yes">Entry</li>
+                </ol>
+                <div className="panel panel-default">
+                    <div className="panel-heading">
+                        <span id="journal-entry-id"></span>
+                        <span id="journal-entry-date" className="pull-right"></span>
+                    </div>
+                    <div id="journal-entry-message"></div>
+                    <table className="info-table-ct" id="journal-entry-fields">
+                    </table>
+                </div>
+            </div>
+        );
+    }
+}
+*/
 class View extends React.Component {
     constructor(props) {
         super(props);
