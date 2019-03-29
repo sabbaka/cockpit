@@ -197,7 +197,7 @@ class View extends React.Component {
         }
 
         if (this.cursor === null) {
-            this.setState({entries: []});
+            this.setState({ entries: [] });
         }
 
         let matches = [];
@@ -235,7 +235,7 @@ class View extends React.Component {
 
         this.journalctl.stream((entries) => {
             this.setState((state) => {
-                return {entries: state.entries.concat(entries)};
+                return { entries: state.entries.concat(entries) };
             });
         });
     }
@@ -244,14 +244,14 @@ class View extends React.Component {
         let options = cockpit.location.options;
         options.current_day = target;
         cockpit.location.go([], options);
-        this.setState({current_day: target}, this.journalStart);
+        this.setState({ current_day: target }, this.journalStart);
     }
 
     changeSeverity(target) {
         let options = cockpit.location.options;
         options.prio = target;
         cockpit.location.go([], options);
-        this.setState({prio: target}, this.journalStart);
+        this.setState({ prio: target }, this.journalStart);
     }
 
     componentDidMount() {

@@ -20,6 +20,29 @@
 import $ from "jquery";
 import cockpit from "cockpit";
 import { journal } from "journal";
+import ReactDOM from "react-dom";
+import React from "react";
+let Player = require("./player.jsx");
+
+class View extends React.Component {
+    render() {
+        let player =
+        (<Player.Player
+            // ref="player"
+            // matchList={this.props.recording.matchList}
+            // logsTs={this.props.logsTs}
+            // search={this.props.search}
+            // onTsChange={this.props.onTsChange}
+            recording={this.props.r}
+        />);
+
+        return (
+            <React.Fragment>
+                {player}
+            </React.Fragment>
+        );
+    }
+}
 
 $(function() {
     cockpit.translate();
@@ -440,6 +463,7 @@ $(function() {
     function create_entry(out, entry) {
         $('#journal-entry-message').text(journal.printable(entry['MESSAGE']));
         var keys = Object.keys(entry).sort();
+        console.log(keys);
         $.each(keys, function (i, key) {
             if (key !== 'MESSAGE') {
                 out.append(
@@ -450,6 +474,10 @@ $(function() {
                                 .text(journal.printable(entry[key]))));
             }
         });
+        if (keys.includes("TLOG_REC")) {
+            console.log(true);
+            ReactDOM.render(<View r={entry["TLOG_REC"]} />, document.getElementById('session_player'));
+        }
     }
 
     function create_problem(out, entry) {
@@ -910,3 +938,20 @@ $(function() {
 
     update();
 });
+/*
+class View extends React.Component {
+    render() {
+        return (
+            <React.Fragment>
+                <button className="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                    <span id="session" />
+                    <span className="caret" />
+                </button>
+                <ul id="sessions_list" className="dropdown-menu" role="menu" />
+            </React.Fragment>
+        );
+    }
+}
+
+ReactDOM.render(<View />, document.getElementById('recorded_sessions'));
+*/
