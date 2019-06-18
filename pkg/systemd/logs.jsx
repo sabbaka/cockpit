@@ -29,11 +29,11 @@ class View extends React.Component {
         let player =
         (<Player.Player
             // ref="player"
-            // matchList={this.props.recording.matchList}
-            // logsTs={this.props.logsTs}
-            // search={this.props.search}
-            // onTsChange={this.props.onTsChange}
-            recording={this.props.r}
+            matchList={this.props.matchList}
+            logsTs={this.props.logsTs}
+            search={this.props.search}
+            onTsChange={this.props.onTsChange}
+            recording={this.props.recording}
         />);
 
         return (
@@ -476,7 +476,7 @@ $(function() {
         });
         if (keys.includes("TLOG_REC")) {
             console.log(true);
-            ReactDOM.render(<View r={entry["TLOG_REC"]} />, document.getElementById('session_player'));
+            ReactDOM.render(<View recording={entry["TLOG_REC"]} matchList={["TLOG_REC=" + entry["TLOG_REC"]]} logsTs={0} search={() => {}} onTsChange={() => {}} />, document.getElementById('session_player'));
         }
     }
 
@@ -913,6 +913,18 @@ $(function() {
     });
 
     $('#journal-box').on('click', '.cockpit-logline', function() {
+        // var log_service = $(this).find('.cockpit-log-service');
+        // if (log_service) {
+        // //     console.log($(this).find('.cockpit-log-message'));
+        // //     var message = $(this).find('.cockpit-log-message');
+        // //     console.log(message);
+        // //     var contents = JSON.parse(message);
+        // //     console.log(contents);
+        // //     var entry = {};
+        //     if (log_service.innerHTML === "-tlog-rec-session") {
+        //         ReactDOM.render(<View recording={entry["TLOG_REC"]} matchList={["TLOG_REC=" + entry["TLOG_REC"]]} logsTs={0} search={() => {}} onTsChange={() => {}} />, document.getElementById('session_player'));
+        //     }
+        // }
         var cursor = $(this).attr('data-cursor');
         if (cursor)
             cockpit.location.go([ cursor ], { 'parent_options': JSON.stringify(cockpit.location.options) });
@@ -938,20 +950,3 @@ $(function() {
 
     update();
 });
-/*
-class View extends React.Component {
-    render() {
-        return (
-            <React.Fragment>
-                <button className="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                    <span id="session" />
-                    <span className="caret" />
-                </button>
-                <ul id="sessions_list" className="dropdown-menu" role="menu" />
-            </React.Fragment>
-        );
-    }
-}
-
-ReactDOM.render(<View />, document.getElementById('recorded_sessions'));
-*/

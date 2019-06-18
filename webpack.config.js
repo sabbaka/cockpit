@@ -124,6 +124,7 @@ var info = {
         ],
         "systemd/logs": [
             "systemd/logs.jsx",
+            "systemd/logs.css",
         ],
         "systemd/logsreact": [
             "systemd/logsreact.jsx",

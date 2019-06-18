@@ -20,10 +20,10 @@
 import React from 'react';
 import { Terminal as Term } from "xterm";
 import { journal as Journal } from "journal";
+// let Term = require("term.js-cockpit");
+// let Term = require("term.js");
 let cockpit = require("cockpit");
 let _ = cockpit.gettext;
-let moment = require("moment");
-// let Term = require("term.js-cockpit");
 let $ = require("jquery");
 require("console.css");
 require("bootstrap-slider");
@@ -36,10 +36,6 @@ let padInt = function (n, w) {
         s = '0' + s;
     }
     return ((i < 0) ? '-' : '') + s;
-};
-
-let formatDateTime = function (ms) {
-    return moment(ms).format("YYYY-MM-DD HH:mm:ss");
 };
 
 /*
@@ -636,6 +632,7 @@ class Search extends React.Component {
     }
 
     handleSearchSubmit() {
+        console.log(this.props.matchList);
         this.journalctl = Journal.journalctl(
             this.props.matchList,
             { count: "all", follow: false, merge: true, grep: this.state.search });
@@ -853,10 +850,12 @@ export class Player extends React.Component {
     }
 
     _transform(width, height) {
+        var precision = Math.pow(10, 3);
         var relation = Math.min(
             this.state.containerWidth / this.state.term.element.offsetWidth,
             this.containerHeight / this.state.term.element.offsetHeight
         );
+        relation = Math.ceil(relation * precision) / precision;
         this.setState({
             term_top_style: "50%",
             term_left_style: "50%",
@@ -1190,8 +1189,6 @@ export class Player extends React.Component {
     }
 
     render() {
-        let r = this.props.recording;
-
         let speedExp = this.state.speedExp;
         let speedFactor = Math.pow(2, Math.abs(speedExp));
         let speedStr;
@@ -1233,9 +1230,6 @@ export class Player extends React.Component {
                     <div id="recording-wrap">
                         <div className="col-md-6 player-wrap">
                             <div ref="wrapper" className="panel panel-default">
-                                <div className="panel-heading">
-                                    <span>{this.state.title}</span>
-                                </div>
                                 <div className="panel-body">
                                     <div className={(this.state.drag_pan ? "dragnpan" : "")} style={scrollwrap} ref="scrollwrap">
                                         <div ref="term" className="console-ct" key={this.state.term} style={style} />
@@ -1301,55 +1295,6 @@ export class Player extends React.Component {
                                     <div className="clearfix" />
                                     <ErrorList list={this.error_service.errors} />
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-md-6">
-                        <div className="panel panel-default">
-                            <div className="panel-heading">
-                                <span>{_("Recording")}</span>
-                            </div>
-                            <div className="panel-body">
-                                <table className="form-table-ct">
-                                    <tbody>
-                                        <tr>
-                                            <td>{_("ID")}</td>
-                                            <td>{r.id}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{_("Hostname")}</td>
-                                            <td>{r.hostname}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{_("Boot ID")}</td>
-                                            <td>{r.boot_id}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{_("Session ID")}</td>
-                                            <td>{r.session_id}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{_("PID")}</td>
-                                            <td>{r.pid}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{_("Start")}</td>
-                                            <td>{formatDateTime(r.start)}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{_("End")}</td>
-                                            <td>{formatDateTime(r.end)}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{_("Duration")}</td>
-                                            <td>{formatDuration(r.end - r.start)}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{_("User")}</td>
-                                            <td>{r.user}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
                             </div>
                         </div>
                     </div>
